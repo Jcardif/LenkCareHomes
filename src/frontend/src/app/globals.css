@@ -1,0 +1,284 @@
+/* LenkCare Homes - Global Styles */
+
+:root {
+  /* Healthcare-inspired color palette */
+  --primary-color: #1890ff;
+  --success-color: #52c41a;
+  --warning-color: #faad14;
+  --error-color: #ff4d4f;
+  --text-color: rgba(0, 0, 0, 0.85);
+  --text-color-secondary: rgba(0, 0, 0, 0.45);
+  --background-color: #f5f5f5;
+  --background-color-light: #fafafa;
+  --border-color: #d9d9d9;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Focus states for accessibility */
+:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* ============================================
+   RESPONSIVE UTILITIES
+   ============================================ */
+
+/* Minimum touch target size for mobile (44x44px per WCAG) */
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Hide on specific breakpoints */
+@media (max-width: 575px) {
+  .hide-xs { display: none !important; }
+}
+
+@media (min-width: 576px) and (max-width: 767px) {
+  .hide-sm { display: none !important; }
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  .hide-md { display: none !important; }
+}
+
+@media (min-width: 992px) and (max-width: 1199px) {
+  .hide-lg { display: none !important; }
+}
+
+@media (min-width: 1200px) {
+  .hide-xl { display: none !important; }
+}
+
+/* Show only on specific breakpoints */
+@media (min-width: 576px) {
+  .show-xs-only { display: none !important; }
+}
+
+@media (max-width: 575px), (min-width: 768px) {
+  .show-sm-only { display: none !important; }
+}
+
+@media (max-width: 767px), (min-width: 992px) {
+  .show-md-only { display: none !important; }
+}
+
+/* Mobile-first responsive padding */
+.responsive-padding {
+  padding: 16px;
+}
+
+@media (min-width: 576px) {
+  .responsive-padding {
+    padding: 24px;
+  }
+}
+
+@media (min-width: 992px) {
+  .responsive-padding {
+    padding: 32px;
+  }
+}
+
+/* Mobile-first responsive margin */
+.responsive-margin {
+  margin: 8px;
+}
+
+@media (min-width: 576px) {
+  .responsive-margin {
+    margin: 16px;
+  }
+}
+
+@media (min-width: 992px) {
+  .responsive-margin {
+    margin: 24px;
+  }
+}
+
+/* Full-width on mobile, auto on larger screens */
+.mobile-full-width {
+  width: 100%;
+}
+
+@media (min-width: 576px) {
+  .mobile-full-width {
+    width: auto;
+  }
+}
+
+/* Stack buttons on mobile */
+.responsive-button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (min-width: 576px) {
+  .responsive-button-group {
+    flex-direction: row;
+  }
+}
+
+/* Responsive modal width override */
+.responsive-modal .ant-modal {
+  max-width: 95vw !important;
+  margin: 8px auto;
+}
+
+@media (max-width: 575px) {
+  .responsive-modal .ant-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    top: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  .responsive-modal .ant-modal-content {
+    border-radius: 0 0 12px 12px;
+    min-height: 100vh;
+  }
+}
+
+/* Mobile drawer navigation styles */
+.mobile-nav-drawer .ant-drawer-body {
+  padding: 0 !important;
+  background: #2d3732;
+}
+
+.mobile-nav-drawer .ant-drawer-header {
+  background: #2d3732;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mobile-nav-drawer .ant-drawer-close {
+  color: #ffffff;
+}
+
+/* Responsive table improvements */
+@media (max-width: 767px) {
+  /* Make tables scrollable on mobile */
+  .ant-table-wrapper {
+    overflow-x: auto;
+  }
+  
+  /* Reduce table cell padding on mobile */
+  .ant-table-cell {
+    padding: 8px !important;
+  }
+  
+  /* Ensure clickable rows have enough height */
+  .ant-table-tbody > tr {
+    min-height: 48px;
+  }
+}
+
+/* Form full-width inputs on mobile */
+@media (max-width: 575px) {
+  .ant-picker,
+  .ant-select,
+  .ant-input-number {
+    width: 100% !important;
+  }
+  
+  /* Stack form buttons vertically on very small screens */
+  .ant-form-item .ant-btn + .ant-btn {
+    margin-left: 0;
+    margin-top: 8px;
+  }
+}
+
+/* Responsive page header */
+.page-header-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (min-width: 768px) {
+  .page-header-wrapper {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.page-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 575px) {
+  .page-header-actions {
+    flex-direction: column;
+  }
+  
+  .page-header-actions .ant-btn {
+    width: 100%;
+  }
+}
+
+/* Responsive card grids */
+@media (max-width: 575px) {
+  .ant-card {
+    border-radius: 8px !important;
+  }
+  
+  .ant-card-body {
+    padding: 16px !important;
+  }
+}
+
+/* Skip link enhancement for mobile */
+.skip-link:focus {
+  left: 16px !important;
+  top: 16px !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 12px 20px !important;
+  font-size: 16px;
+  z-index: 10000 !important;
+}

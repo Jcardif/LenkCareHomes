@@ -1,0 +1,8 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/099c6ea1-deba-49d7-832e-13423a3cf73f/resourceGroups/rg-dev-lenkcarehomes-westus2/providers/Microsoft.Web/sites/app-dev-frontend-lenkcare-westcentralus",
+    "appService.deploySubpath": "src\\frontend",
+    "cSpell.words": [
+        "datagen",
+        "lenkcare"
+    ]
+}

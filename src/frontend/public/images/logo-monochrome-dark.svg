@@ -1,0 +1,36 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- LenkCare Homes Logo - Monochrome Dark (Black) -->
+  
+  <!-- Caring hand curve (foundation) -->
+  <path d="M 8 48 Q 32 60 56 48" 
+        stroke="#2D3732" 
+        stroke-width="5" 
+        stroke-linecap="round"
+        fill="none"/>
+  
+  <!-- House roofline (shelter) -->
+  <path d="M 12 34 L 32 14 L 52 34" 
+        stroke="#2D3732" 
+        stroke-width="5" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"
+        fill="none"/>
+  
+  <!-- House body -->
+  <path d="M 18 32 L 18 44 L 46 44 L 46 32" 
+        stroke="#2D3732" 
+        stroke-width="4" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"
+        fill="none"/>
+  
+  <!-- Heart (love/care) -->
+  <path d="M 32 40 
+           C 32 40 25 35 25 30 
+           C 25 27 27 25 29.5 25 
+           C 31 25 32 26 32 26 
+           C 32 26 33 25 34.5 25 
+           C 37 25 39 27 39 30 
+           C 39 35 32 40 32 40 Z" 
+        fill="#2D3732"/>
+</svg>

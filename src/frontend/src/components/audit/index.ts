@@ -1,0 +1,1 @@
+export { ActivityFeedView } from './ActivityFeedView';

@@ -1,0 +1,49 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- LenkCare Homes Android Chrome Icon - 512x512 (maskable safe zone: 80% = 410px centered) -->
+  <defs>
+    <linearGradient id="goldGrad512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#D4AF37"/>
+      <stop offset="50%" style="stop-color:#C9A227"/>
+      <stop offset="100%" style="stop-color:#B8860B"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background (full bleed for maskable) -->
+  <rect width="512" height="512" fill="#FFFFFF"/>
+  
+  <!-- Icon within safe zone (51px margin = ~10% each side) -->
+  <g transform="translate(51, 51)">
+    <!-- Caring hand curve (foundation) -->
+    <path d="M 40 320 Q 205 400 370 320" 
+          stroke="url(#goldGrad512)" 
+          stroke-width="32" 
+          stroke-linecap="round"
+          fill="none"/>
+    
+    <!-- House roofline (shelter) -->
+    <path d="M 60 220 L 205 80 L 350 220" 
+          stroke="url(#goldGrad512)" 
+          stroke-width="32" 
+          stroke-linecap="round" 
+          stroke-linejoin="round"
+          fill="none"/>
+    
+    <!-- House body -->
+    <path d="M 100 205 L 100 295 L 310 295 L 310 205" 
+          stroke="url(#goldGrad512)" 
+          stroke-width="28" 
+          stroke-linecap="round" 
+          stroke-linejoin="round"
+          fill="none"/>
+    
+    <!-- Heart (love/care) - bold and centered -->
+    <path d="M 205 275 
+             C 205 275 150 225 150 185 
+             C 150 160 170 140 193 140 
+             C 202 140 205 150 205 150 
+             C 205 150 208 140 217 140 
+             C 240 140 260 160 260 185 
+             C 260 225 205 275 205 275 Z" 
+          fill="#E85A4F"/>
+  </g>
+</svg>

@@ -1,0 +1,24 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.0.2">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>4d64b0a8-60e8-4110-8e03-d6bb5849c789</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Aspire 13 includes Aspire.Hosting.AppHost automatically via SDK -->
+    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.0.2" />
+    <PackageReference Include="Aspire.Hosting.Python" Version="13.0.2" />
+    <!-- Docker container hosting for local development -->
+    <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.0.2" />
+    <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LenkCareHomes.Api\LenkCareHomes.Api.csproj" />
+  </ItemGroup>
+
+</Project>

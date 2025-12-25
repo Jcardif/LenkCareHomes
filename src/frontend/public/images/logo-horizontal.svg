@@ -1,0 +1,65 @@
+<svg width="280" height="48" viewBox="0 0 280 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- LenkCare Homes Horizontal Lockup -->
+  <defs>
+    <linearGradient id="goldGradH" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#D4AF37"/>
+      <stop offset="50%" style="stop-color:#C9A227"/>
+      <stop offset="100%" style="stop-color:#B8860B"/>
+    </linearGradient>
+    <linearGradient id="wordGoldH" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#C9A227"/>
+      <stop offset="100%" style="stop-color:#B8860B"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Logo Mark (scaled to 48x48) -->
+  <g transform="translate(0, 0)">
+    <!-- Caring hand curve -->
+    <path d="M 6 36 Q 24 45 42 36" 
+          stroke="url(#goldGradH)" 
+          stroke-width="3.5" 
+          stroke-linecap="round"
+          fill="none"/>
+    
+    <!-- House roofline -->
+    <path d="M 9 25 L 24 10 L 39 25" 
+          stroke="url(#goldGradH)" 
+          stroke-width="3.5" 
+          stroke-linecap="round" 
+          stroke-linejoin="round"
+          fill="none"/>
+    
+    <!-- House body -->
+    <path d="M 13.5 24 L 13.5 33 L 34.5 33 L 34.5 24" 
+          stroke="url(#goldGradH)" 
+          stroke-width="3" 
+          stroke-linecap="round" 
+          stroke-linejoin="round"
+          fill="none"/>
+    
+    <!-- Heart -->
+    <path d="M 24 30 
+             C 24 30 18.5 26 18.5 22 
+             C 18.5 20 20 18.5 21.8 18.5 
+             C 23 18.5 24 19.5 24 19.5 
+             C 24 19.5 25 18.5 26.2 18.5 
+             C 28 18.5 29.5 20 29.5 22 
+             C 29.5 26 24 30 24 30 Z" 
+          fill="#E85A4F"/>
+  </g>
+  
+  <!-- Wordmark -->
+  <text x="60" y="32" 
+        font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" 
+        font-size="22" 
+        font-weight="700" 
+        letter-spacing="0.04em"
+        fill="url(#wordGoldH)">LENKCARE</text>
+  
+  <text x="185" y="32" 
+        font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" 
+        font-size="22" 
+        font-weight="400" 
+        letter-spacing="0.02em"
+        fill="#8B6914">Homes</text>
+</svg>
