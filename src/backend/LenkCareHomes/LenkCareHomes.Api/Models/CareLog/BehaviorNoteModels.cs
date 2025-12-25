@@ -3,7 +3,7 @@ using LenkCareHomes.Api.Domain.Enums;
 namespace LenkCareHomes.Api.Models.CareLog;
 
 /// <summary>
-/// DTO for behavior note information.
+///     DTO for behavior note information.
 /// </summary>
 public sealed record BehaviorNoteDto
 {
@@ -19,7 +19,7 @@ public sealed record BehaviorNoteDto
 }
 
 /// <summary>
-/// Request model for creating a behavior note.
+///     Request model for creating a behavior note.
 /// </summary>
 public sealed record CreateBehaviorNoteRequest
 {
@@ -30,7 +30,7 @@ public sealed record CreateBehaviorNoteRequest
 }
 
 /// <summary>
-/// Response model for behavior note operations.
+///     Response model for behavior note operations.
 /// </summary>
 public sealed record BehaviorNoteOperationResponse
 {

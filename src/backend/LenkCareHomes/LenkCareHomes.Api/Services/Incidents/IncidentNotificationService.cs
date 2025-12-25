@@ -12,15 +12,15 @@ using Microsoft.Extensions.Options;
 namespace LenkCareHomes.Api.Services.Incidents;
 
 /// <summary>
-/// Service for sending incident notifications to admins.
+///     Service for sending incident notifications to admins.
 /// </summary>
 public sealed class IncidentNotificationService : IIncidentNotificationService
 {
+    private readonly IAuditLogService _auditLogService;
     private readonly ApplicationDbContext _dbContext;
     private readonly EmailClient? _emailClient;
-    private readonly EmailSettings _settings;
-    private readonly IAuditLogService _auditLogService;
     private readonly ILogger<IncidentNotificationService> _logger;
+    private readonly EmailSettings _settings;
 
     public IncidentNotificationService(
         ApplicationDbContext dbContext,
@@ -34,13 +34,9 @@ public sealed class IncidentNotificationService : IIncidentNotificationService
         _logger = logger;
 
         if (!string.IsNullOrWhiteSpace(_settings.ConnectionString))
-        {
             _emailClient = new EmailClient(_settings.ConnectionString);
-        }
         else
-        {
             _logger.LogWarning("Email service not configured. Incident notifications will be logged instead of sent.");
-        }
     }
 
     /// <inheritdoc />
@@ -84,10 +80,7 @@ public sealed class IncidentNotificationService : IIncidentNotificationService
 
         foreach (var admin in adminEmails)
         {
-            if (string.IsNullOrWhiteSpace(admin.Email))
-            {
-                continue;
-            }
+            if (string.IsNullOrWhiteSpace(admin.Email)) continue;
 
             try
             {
@@ -105,7 +98,7 @@ public sealed class IncidentNotificationService : IIncidentNotificationService
         }
 
         // Log the notification event
-        await _auditLogService.LogAsync(new Domain.Entities.AuditLogEntry
+        await _auditLogService.LogAsync(new AuditLogEntry
         {
             PartitionKey = "system",
             Action = AuditActions.IncidentNotificationSent,
@@ -124,49 +117,49 @@ public sealed class IncidentNotificationService : IIncidentNotificationService
         string reportedByName)
     {
         return $"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="utf-8">
-            </head>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <div style="background-color: #ff4d4f; color: white; padding: 15px; border-radius: 4px 4px 0 0;">
-                        <h2 style="margin: 0;">⚠️ New Incident Report</h2>
-                    </div>
-                    <div style="border: 1px solid #ddd; border-top: none; padding: 20px; border-radius: 0 0 4px 4px;">
-                        <p>A new incident has been reported and requires your attention.</p>
-                        
-                        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-                            <tr>
-                                <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold; width: 140px;">Incident Type:</td>
-                                <td style="padding: 8px; border-bottom: 1px solid #eee; color: #ff4d4f; font-weight: bold;">{incidentType}</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Client:</td>
-                                <td style="padding: 8px; border-bottom: 1px solid #eee;">{clientName}</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Home:</td>
-                                <td style="padding: 8px; border-bottom: 1px solid #eee;">{homeName}</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Reported By:</td>
-                                <td style="padding: 8px; border-bottom: 1px solid #eee;">{reportedByName}</td>
-                            </tr>
-                        </table>
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                </head>
+                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <div style="background-color: #ff4d4f; color: white; padding: 15px; border-radius: 4px 4px 0 0;">
+                            <h2 style="margin: 0;">⚠️ New Incident Report</h2>
+                        </div>
+                        <div style="border: 1px solid #ddd; border-top: none; padding: 20px; border-radius: 0 0 4px 4px;">
+                            <p>A new incident has been reported and requires your attention.</p>
+                            
+                            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                                <tr>
+                                    <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold; width: 140px;">Incident Type:</td>
+                                    <td style="padding: 8px; border-bottom: 1px solid #eee; color: #ff4d4f; font-weight: bold;">{incidentType}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Client:</td>
+                                    <td style="padding: 8px; border-bottom: 1px solid #eee;">{clientName}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Home:</td>
+                                    <td style="padding: 8px; border-bottom: 1px solid #eee;">{homeName}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Reported By:</td>
+                                    <td style="padding: 8px; border-bottom: 1px solid #eee;">{reportedByName}</td>
+                                </tr>
+                            </table>
 
-                        <p>Please log in to LenkCare Homes to review the full incident report and take appropriate action.</p>
+                            <p>Please log in to LenkCare Homes to review the full incident report and take appropriate action.</p>
+                        </div>
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                        <p style="font-size: 12px; color: #666;">
+                            This is an automated urgent notification from LenkCare Homes. Please do not reply to this email.<br>
+                            Incident ID: {incidentId}
+                        </p>
                     </div>
-                    <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-                    <p style="font-size: 12px; color: #666;">
-                        This is an automated urgent notification from LenkCare Homes. Please do not reply to this email.<br>
-                        Incident ID: {incidentId}
-                    </p>
-                </div>
-            </body>
-            </html>
-            """;
+                </body>
+                </html>
+                """;
     }
 
     private static string GeneratePlainTextContent(
@@ -177,21 +170,21 @@ public sealed class IncidentNotificationService : IIncidentNotificationService
         string reportedByName)
     {
         return $"""
-            ⚠️ NEW INCIDENT REPORT
+                ⚠️ NEW INCIDENT REPORT
 
-            A new incident has been reported and requires your attention.
+                A new incident has been reported and requires your attention.
 
-            Incident Type: {incidentType}
-            Client: {clientName}
-            Home: {homeName}
-            Reported By: {reportedByName}
+                Incident Type: {incidentType}
+                Client: {clientName}
+                Home: {homeName}
+                Reported By: {reportedByName}
 
-            Please log in to LenkCare Homes to review the full incident report and take appropriate action.
+                Please log in to LenkCare Homes to review the full incident report and take appropriate action.
 
-            ---
-            Incident ID: {incidentId}
-            This is an automated urgent notification from LenkCare Homes.
-            """;
+                ---
+                Incident ID: {incidentId}
+                This is an automated urgent notification from LenkCare Homes.
+                """;
     }
 
     private async Task SendEmailAsync(
@@ -211,7 +204,7 @@ public sealed class IncidentNotificationService : IIncidentNotificationService
         }
 
         var emailMessage = new EmailMessage(
-            senderAddress: _settings.SenderAddress,
+            _settings.SenderAddress,
             content: new EmailContent(subject)
             {
                 Html = htmlContent,

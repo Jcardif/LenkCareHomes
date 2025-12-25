@@ -1,7 +1,7 @@
 namespace LenkCareHomes.Api.Models.Clients;
 
 /// <summary>
-/// DTO for client information.
+///     DTO for client information.
 /// </summary>
 public sealed record ClientDto
 {
@@ -34,7 +34,7 @@ public sealed record ClientDto
 }
 
 /// <summary>
-/// Summary DTO for client listings.
+///     Summary DTO for client listings.
 /// </summary>
 public sealed record ClientSummaryDto
 {
@@ -53,7 +53,7 @@ public sealed record ClientSummaryDto
 }
 
 /// <summary>
-/// Request model for admitting a new client.
+///     Request model for admitting a new client.
 /// </summary>
 public sealed record AdmitClientRequest
 {
@@ -77,7 +77,7 @@ public sealed record AdmitClientRequest
 }
 
 /// <summary>
-/// Request model for updating a client.
+///     Request model for updating a client.
 /// </summary>
 public sealed record UpdateClientRequest
 {
@@ -98,7 +98,7 @@ public sealed record UpdateClientRequest
 }
 
 /// <summary>
-/// Request model for discharging a client.
+///     Request model for discharging a client.
 /// </summary>
 public sealed record DischargeClientRequest
 {
@@ -107,7 +107,7 @@ public sealed record DischargeClientRequest
 }
 
 /// <summary>
-/// Request model for transferring a client to a different bed.
+///     Request model for transferring a client to a different bed.
 /// </summary>
 public sealed record TransferClientRequest
 {
@@ -115,7 +115,7 @@ public sealed record TransferClientRequest
 }
 
 /// <summary>
-/// Response model for client operations.
+///     Response model for client operations.
 /// </summary>
 public sealed record ClientOperationResponse
 {

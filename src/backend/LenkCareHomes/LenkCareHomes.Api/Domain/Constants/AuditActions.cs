@@ -1,7 +1,7 @@
 namespace LenkCareHomes.Api.Domain.Constants;
 
 /// <summary>
-/// Defines audit action types for logging to Cosmos DB.
+///     Defines audit action types for logging to Cosmos DB.
 /// </summary>
 public static class AuditActions
 {

@@ -8,12 +8,12 @@ using Microsoft.EntityFrameworkCore;
 namespace LenkCareHomes.Api.Services.CareLog;
 
 /// <summary>
-/// Service implementation for ADL log operations.
+///     Service implementation for ADL log operations.
 /// </summary>
 public sealed class ADLLogService : IADLLogService
 {
-    private readonly ApplicationDbContext _dbContext;
     private readonly IAuditLogService _auditService;
+    private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<ADLLogService> _logger;
 
     public ADLLogService(
@@ -43,13 +43,11 @@ public sealed class ADLLogService : IADLLogService
             !request.Transferring.HasValue &&
             !request.Continence.HasValue &&
             !request.Feeding.HasValue)
-        {
             return new ADLLogOperationResponse
             {
                 Success = false,
                 Error = "At least one ADL category must be filled."
             };
-        }
 
         // Verify client exists
         var client = await _dbContext.Clients
@@ -57,13 +55,11 @@ public sealed class ADLLogService : IADLLogService
             .FirstOrDefaultAsync(c => c.Id == clientId, cancellationToken);
 
         if (client is null)
-        {
             return new ADLLogOperationResponse
             {
                 Success = false,
                 Error = "Client not found."
             };
-        }
 
         var adlLog = new ADLLog
         {
@@ -121,15 +117,9 @@ public sealed class ADLLogService : IADLLogService
             .Include(a => a.Caregiver)
             .Where(a => a.ClientId == clientId);
 
-        if (fromDate.HasValue)
-        {
-            query = query.Where(a => a.Timestamp >= fromDate.Value);
-        }
+        if (fromDate.HasValue) query = query.Where(a => a.Timestamp >= fromDate.Value);
 
-        if (toDate.HasValue)
-        {
-            query = query.Where(a => a.Timestamp <= toDate.Value);
-        }
+        if (toDate.HasValue) query = query.Where(a => a.Timestamp <= toDate.Value);
 
         var logs = await query
             .OrderByDescending(a => a.Timestamp)

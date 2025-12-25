@@ -3,7 +3,7 @@ using LenkCareHomes.Api.Domain.Enums;
 namespace LenkCareHomes.Api.Models.CareLog;
 
 /// <summary>
-/// DTO for medication log information.
+///     DTO for medication log information.
 /// </summary>
 public sealed record MedicationLogDto
 {
@@ -25,7 +25,7 @@ public sealed record MedicationLogDto
 }
 
 /// <summary>
-/// Request model for creating a medication log entry.
+///     Request model for creating a medication log entry.
 /// </summary>
 public sealed record CreateMedicationLogRequest
 {
@@ -42,7 +42,7 @@ public sealed record CreateMedicationLogRequest
 }
 
 /// <summary>
-/// Response model for medication log operations.
+///     Response model for medication log operations.
 /// </summary>
 public sealed record MedicationLogOperationResponse
 {

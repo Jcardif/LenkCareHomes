@@ -3,7 +3,7 @@ using LenkCareHomes.Api.Domain.Enums;
 namespace LenkCareHomes.Api.Models.Appointments;
 
 /// <summary>
-/// DTO for appointment summary in list views.
+///     DTO for appointment summary in list views.
 /// </summary>
 public sealed record AppointmentSummaryDto
 {
@@ -22,7 +22,7 @@ public sealed record AppointmentSummaryDto
 }
 
 /// <summary>
-/// Full DTO for appointment details.
+///     Full DTO for appointment details.
 /// </summary>
 public sealed record AppointmentDto
 {
@@ -53,7 +53,7 @@ public sealed record AppointmentDto
 }
 
 /// <summary>
-/// Request to create a new appointment.
+///     Request to create a new appointment.
 /// </summary>
 public sealed record CreateAppointmentRequest
 {
@@ -70,7 +70,7 @@ public sealed record CreateAppointmentRequest
 }
 
 /// <summary>
-/// Request to update an existing appointment.
+///     Request to update an existing appointment.
 /// </summary>
 public sealed record UpdateAppointmentRequest
 {
@@ -86,7 +86,7 @@ public sealed record UpdateAppointmentRequest
 }
 
 /// <summary>
-/// Request to complete an appointment.
+///     Request to complete an appointment.
 /// </summary>
 public sealed record CompleteAppointmentRequest
 {
@@ -94,7 +94,7 @@ public sealed record CompleteAppointmentRequest
 }
 
 /// <summary>
-/// Request to cancel an appointment.
+///     Request to cancel an appointment.
 /// </summary>
 public sealed record CancelAppointmentRequest
 {
@@ -102,7 +102,7 @@ public sealed record CancelAppointmentRequest
 }
 
 /// <summary>
-/// Request to mark an appointment as no-show.
+///     Request to mark an appointment as no-show.
 /// </summary>
 public sealed record NoShowAppointmentRequest
 {
@@ -110,7 +110,7 @@ public sealed record NoShowAppointmentRequest
 }
 
 /// <summary>
-/// Request to reschedule an appointment.
+///     Request to reschedule an appointment.
 /// </summary>
 public sealed record RescheduleAppointmentRequest
 {
@@ -119,7 +119,7 @@ public sealed record RescheduleAppointmentRequest
 }
 
 /// <summary>
-/// Response for appointment operations.
+///     Response for appointment operations.
 /// </summary>
 public sealed record AppointmentOperationResponse
 {
@@ -129,7 +129,7 @@ public sealed record AppointmentOperationResponse
 }
 
 /// <summary>
-/// Paged response for appointments.
+///     Paged response for appointments.
 /// </summary>
 public sealed record PagedAppointmentResponse
 {
@@ -143,7 +143,7 @@ public sealed record PagedAppointmentResponse
 }
 
 /// <summary>
-/// DTO for upcoming appointment display on dashboard.
+///     DTO for upcoming appointment display on dashboard.
 /// </summary>
 public sealed record UpcomingAppointmentDto
 {

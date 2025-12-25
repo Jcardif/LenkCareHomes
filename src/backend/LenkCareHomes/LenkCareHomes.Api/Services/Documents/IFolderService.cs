@@ -4,12 +4,12 @@ using LenkCareHomes.Api.Models.Documents;
 namespace LenkCareHomes.Api.Services.Documents;
 
 /// <summary>
-/// Service interface for folder management operations.
+///     Service interface for folder management operations.
 /// </summary>
 public interface IFolderService
 {
     /// <summary>
-    /// Creates a new folder.
+    ///     Creates a new folder.
     /// </summary>
     Task<FolderOperationResponse> CreateFolderAsync(
         CreateFolderRequest request,
@@ -18,7 +18,7 @@ public interface IFolderService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets a folder by ID with its contents.
+    ///     Gets a folder by ID with its contents.
     /// </summary>
     Task<FolderDto?> GetFolderByIdAsync(
         Guid folderId,
@@ -28,7 +28,7 @@ public interface IFolderService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets the folder tree for navigation.
+    ///     Gets the folder tree for navigation.
     /// </summary>
     Task<IReadOnlyList<FolderTreeNodeDto>> GetFolderTreeAsync(
         DocumentScope? scope,
@@ -40,7 +40,7 @@ public interface IFolderService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets root-level folders filtered by scope.
+    ///     Gets root-level folders filtered by scope.
     /// </summary>
     Task<IReadOnlyList<FolderSummaryDto>> GetRootFoldersAsync(
         DocumentScope? scope,
@@ -52,7 +52,7 @@ public interface IFolderService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Updates a folder.
+    ///     Updates a folder.
     /// </summary>
     Task<FolderOperationResponse> UpdateFolderAsync(
         Guid folderId,
@@ -62,7 +62,7 @@ public interface IFolderService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Moves a folder to a new parent.
+    ///     Moves a folder to a new parent.
     /// </summary>
     Task<FolderOperationResponse> MoveFolderAsync(
         Guid folderId,
@@ -72,7 +72,7 @@ public interface IFolderService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deletes a folder (soft delete).
+    ///     Deletes a folder (soft delete).
     /// </summary>
     Task<FolderOperationResponse> DeleteFolderAsync(
         Guid folderId,
@@ -81,7 +81,7 @@ public interface IFolderService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Browses documents with folder/scope filtering.
+    ///     Browses documents with folder/scope filtering.
     /// </summary>
     Task<BrowseDocumentsResponse> BrowseDocumentsAsync(
         BrowseDocumentsQuery query,
@@ -91,7 +91,7 @@ public interface IFolderService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets breadcrumb navigation for a folder.
+    ///     Gets breadcrumb navigation for a folder.
     /// </summary>
     Task<IReadOnlyList<BreadcrumbItem>> GetBreadcrumbsAsync(
         Guid folderId,

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using LenkCareHomes.Api.Domain.Constants;
 using LenkCareHomes.Api.Domain.Enums;
 using LenkCareHomes.Api.Models.Incidents;
@@ -9,15 +10,15 @@ using Microsoft.AspNetCore.Mvc;
 namespace LenkCareHomes.Api.Controllers;
 
 /// <summary>
-/// Controller for incident reporting and management operations.
+///     Controller for incident reporting and management operations.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
 public sealed class IncidentsController : ControllerBase
 {
-    private readonly IIncidentService _incidentService;
     private readonly ICaregiverService _caregiverService;
+    private readonly IIncidentService _incidentService;
     private readonly ILogger<IncidentsController> _logger;
 
     public IncidentsController(
@@ -31,9 +32,9 @@ public sealed class IncidentsController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all incidents with optional filters.
-    /// Caregivers only see incidents from their assigned homes.
-    /// Draft incidents are only visible to the user who created them.
+    ///     Gets all incidents with optional filters.
+    ///     Caregivers only see incidents from their assigned homes.
+    ///     Draft incidents are only visible to the user who created them.
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(PagedIncidentResponse), StatusCodes.Status200OK)]
@@ -49,10 +50,7 @@ public sealed class IncidentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var isAdmin = User.IsInRole(Roles.Admin);
         var isSysadmin = User.IsInRole(Roles.Sysadmin);
@@ -62,11 +60,8 @@ public sealed class IncidentsController : ControllerBase
         if (!isAdmin && !isSysadmin)
         {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-            
-            if (allowedHomeIds.Count == 0)
-            {
-                return Ok(PagedIncidentResponse.Create([], 0, pageNumber, pageSize));
-            }
+
+            if (allowedHomeIds.Count == 0) return Ok(PagedIncidentResponse.Create([], 0, pageNumber, pageSize));
         }
 
         var result = await _incidentService.GetIncidentsAsync(
@@ -87,9 +82,9 @@ public sealed class IncidentsController : ControllerBase
     }
 
     /// <summary>
-    /// Gets an incident by ID.
-    /// Caregivers can only access incidents from their assigned homes.
-    /// Draft incidents are only accessible to the user who created them.
+    ///     Gets an incident by ID.
+    ///     Caregivers can only access incidents from their assigned homes.
+    ///     Draft incidents are only accessible to the user who created them.
     /// </summary>
     [HttpGet("{id:guid}")]
     [ActionName(nameof(GetIncidentByIdAsync))]
@@ -101,29 +96,24 @@ public sealed class IncidentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var isAdmin = User.IsInRole(Roles.Admin);
 
         // Get home scope for caregivers
         IReadOnlyList<Guid>? allowedHomeIds = null;
         if (!isAdmin && !User.IsInRole(Roles.Sysadmin))
-        {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-        }
 
-        var incident = await _incidentService.GetIncidentByIdAsync(id, currentUserId.Value, isAdmin, allowedHomeIds, cancellationToken);
+        var incident =
+            await _incidentService.GetIncidentByIdAsync(id, currentUserId.Value, isAdmin, allowedHomeIds,
+                cancellationToken);
         if (incident is null)
         {
             // Check if incident exists but user doesn't have access
-            var existsButDenied = await _incidentService.GetIncidentByIdAsync(id, currentUserId.Value, true, null, cancellationToken);
-            if (existsButDenied is not null)
-            {
-                return Forbid();
-            }
+            var existsButDenied =
+                await _incidentService.GetIncidentByIdAsync(id, currentUserId.Value, true, null, cancellationToken);
+            if (existsButDenied is not null) return Forbid();
             return NotFound();
         }
 
@@ -131,9 +121,9 @@ public sealed class IncidentsController : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new incident report.
-    /// Available to both Admins and Caregivers.
-    /// Caregivers can only create incidents for homes they are assigned to.
+    ///     Creates a new incident report.
+    ///     Available to both Admins and Caregivers.
+    ///     Caregivers can only create incidents for homes they are assigned to.
     /// </summary>
     [HttpPost]
     [Authorize(Roles = $"{Roles.Admin},{Roles.Caregiver}")]
@@ -145,21 +135,16 @@ public sealed class IncidentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var isAdmin = User.IsInRole(Roles.Admin);
 
         // Caregivers can only create incidents for homes they are assigned to
         if (!isAdmin)
         {
-            var allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-            if (!allowedHomeIds.Contains(request.HomeId))
-            {
-                return Forbid();
-            }
+            var allowedHomeIds =
+                await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
+            if (!allowedHomeIds.Contains(request.HomeId)) return Forbid();
         }
 
         var response = await _incidentService.CreateIncidentAsync(
@@ -168,10 +153,7 @@ public sealed class IncidentsController : ControllerBase
             GetClientIpAddress(),
             cancellationToken);
 
-        if (!response.Success)
-        {
-            return BadRequest(response);
-        }
+        if (!response.Success) return BadRequest(response);
 
         return CreatedAtAction(
             nameof(GetIncidentByIdAsync),
@@ -180,8 +162,8 @@ public sealed class IncidentsController : ControllerBase
     }
 
     /// <summary>
-    /// Updates a draft incident.
-    /// Only the creator can update their own draft.
+    ///     Updates a draft incident.
+    ///     Only the creator can update their own draft.
     /// </summary>
     [HttpPut("{id:guid}")]
     [Authorize(Roles = $"{Roles.Admin},{Roles.Caregiver}")]
@@ -194,10 +176,7 @@ public sealed class IncidentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _incidentService.UpdateIncidentAsync(
             id,
@@ -208,10 +187,7 @@ public sealed class IncidentsController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Incident not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Incident not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -219,8 +195,8 @@ public sealed class IncidentsController : ControllerBase
     }
 
     /// <summary>
-    /// Submits a draft incident for review.
-    /// Only the creator can submit their own draft.
+    ///     Submits a draft incident for review.
+    ///     Only the creator can submit their own draft.
     /// </summary>
     [HttpPost("{id:guid}/submit")]
     [Authorize(Roles = $"{Roles.Admin},{Roles.Caregiver}")]
@@ -232,10 +208,7 @@ public sealed class IncidentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _incidentService.SubmitIncidentAsync(
             id,
@@ -245,10 +218,7 @@ public sealed class IncidentsController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Incident not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Incident not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -256,8 +226,8 @@ public sealed class IncidentsController : ControllerBase
     }
 
     /// <summary>
-    /// Deletes a draft incident.
-    /// Only the creator can delete their own draft.
+    ///     Deletes a draft incident.
+    ///     Only the creator can delete their own draft.
     /// </summary>
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = $"{Roles.Admin},{Roles.Caregiver}")]
@@ -269,10 +239,7 @@ public sealed class IncidentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _incidentService.DeleteIncidentAsync(
             id,
@@ -282,10 +249,7 @@ public sealed class IncidentsController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Incident not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Incident not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -293,8 +257,8 @@ public sealed class IncidentsController : ControllerBase
     }
 
     /// <summary>
-    /// Updates incident status.
-    /// Admin only.
+    ///     Updates incident status.
+    ///     Admin only.
     /// </summary>
     [HttpPut("{id:guid}/status")]
     [Authorize(Roles = Roles.Admin)]
@@ -307,10 +271,7 @@ public sealed class IncidentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _incidentService.UpdateIncidentStatusAsync(
             id,
@@ -321,10 +282,7 @@ public sealed class IncidentsController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Incident not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Incident not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -332,8 +290,8 @@ public sealed class IncidentsController : ControllerBase
     }
 
     /// <summary>
-    /// Adds a follow-up note to an incident.
-    /// Admin only.
+    ///     Adds a follow-up note to an incident.
+    ///     Admin only.
     /// </summary>
     [HttpPost("{id:guid}/follow-up")]
     [Authorize(Roles = Roles.Admin)]
@@ -346,10 +304,7 @@ public sealed class IncidentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _incidentService.AddFollowUpAsync(
             id,
@@ -360,20 +315,32 @@ public sealed class IncidentsController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Incident not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Incident not found.") return NotFound();
             return BadRequest(response);
         }
 
         return Ok(response);
     }
 
+    private string? GetClientIpAddress()
+    {
+        var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(forwardedFor)) return forwardedFor.Split(',').First().Trim();
+
+        return HttpContext.Connection.RemoteIpAddress?.ToString();
+    }
+
+    private Guid? GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(userIdClaim, out var userId)) return userId;
+        return null;
+    }
+
     #region Photo Management
 
     /// <summary>
-    /// Gets all photos for an incident.
+    ///     Gets all photos for an incident.
     /// </summary>
     [HttpGet("{id:guid}/photos")]
     [ProducesResponseType(typeof(IReadOnlyList<IncidentPhotoDto>), StatusCodes.Status200OK)]
@@ -383,33 +350,27 @@ public sealed class IncidentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var isAdmin = User.IsInRole(Roles.Admin);
 
         // Check access
         IReadOnlyList<Guid>? allowedHomeIds = null;
         if (!isAdmin && !User.IsInRole(Roles.Sysadmin))
-        {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-        }
 
-        var incident = await _incidentService.GetIncidentByIdAsync(id, currentUserId.Value, isAdmin, allowedHomeIds, cancellationToken);
-        if (incident is null)
-        {
-            return NotFound();
-        }
+        var incident =
+            await _incidentService.GetIncidentByIdAsync(id, currentUserId.Value, isAdmin, allowedHomeIds,
+                cancellationToken);
+        if (incident is null) return NotFound();
 
         var photos = await _incidentService.GetIncidentPhotosAsync(id, cancellationToken);
         return Ok(photos);
     }
 
     /// <summary>
-    /// Initiates a photo upload for an incident.
-    /// Returns a pre-signed URL for uploading directly to blob storage.
+    ///     Initiates a photo upload for an incident.
+    ///     Returns a pre-signed URL for uploading directly to blob storage.
     /// </summary>
     [HttpPost("{id:guid}/photos")]
     [Authorize(Roles = $"{Roles.Admin},{Roles.Caregiver}")]
@@ -422,25 +383,19 @@ public sealed class IncidentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var isAdmin = User.IsInRole(Roles.Admin);
 
         // Verify access to incident
         IReadOnlyList<Guid>? allowedHomeIds = null;
         if (!isAdmin)
-        {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-        }
 
-        var incident = await _incidentService.GetIncidentByIdAsync(id, currentUserId.Value, isAdmin, allowedHomeIds, cancellationToken);
-        if (incident is null)
-        {
-            return NotFound();
-        }
+        var incident =
+            await _incidentService.GetIncidentByIdAsync(id, currentUserId.Value, isAdmin, allowedHomeIds,
+                cancellationToken);
+        if (incident is null) return NotFound();
 
         var response = await _incidentService.InitiatePhotoUploadAsync(
             id,
@@ -449,17 +404,14 @@ public sealed class IncidentsController : ControllerBase
             GetClientIpAddress(),
             cancellationToken);
 
-        if (!response.Success)
-        {
-            return BadRequest(response);
-        }
+        if (!response.Success) return BadRequest(response);
 
         return Created($"/api/incidents/{id}/photos/{response.PhotoId}", response);
     }
 
     /// <summary>
-    /// Confirms a photo upload has completed.
-    /// Should be called after successfully uploading to the pre-signed URL.
+    ///     Confirms a photo upload has completed.
+    ///     Should be called after successfully uploading to the pre-signed URL.
     /// </summary>
     [HttpPost("{id:guid}/photos/{photoId:guid}/confirm")]
     [Authorize(Roles = $"{Roles.Admin},{Roles.Caregiver}")]
@@ -472,10 +424,7 @@ public sealed class IncidentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _incidentService.ConfirmPhotoUploadAsync(
             photoId,
@@ -485,10 +434,7 @@ public sealed class IncidentsController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Photo not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Photo not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -496,7 +442,7 @@ public sealed class IncidentsController : ControllerBase
     }
 
     /// <summary>
-    /// Gets a pre-signed URL for viewing a photo.
+    ///     Gets a pre-signed URL for viewing a photo.
     /// </summary>
     [HttpGet("{id:guid}/photos/{photoId:guid}/view")]
     [ProducesResponseType(typeof(IncidentPhotoViewResponse), StatusCodes.Status200OK)]
@@ -508,18 +454,13 @@ public sealed class IncidentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var isAdmin = User.IsInRole(Roles.Admin);
 
         IReadOnlyList<Guid>? allowedHomeIds = null;
         if (!isAdmin && !User.IsInRole(Roles.Sysadmin))
-        {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-        }
 
         var response = await _incidentService.GetPhotoViewUrlAsync(
             photoId,
@@ -530,10 +471,7 @@ public sealed class IncidentsController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Photo not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Photo not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -541,8 +479,8 @@ public sealed class IncidentsController : ControllerBase
     }
 
     /// <summary>
-    /// Deletes a photo from an incident.
-    /// Only the incident author or admin can delete photos.
+    ///     Deletes a photo from an incident.
+    ///     Only the incident author or admin can delete photos.
     /// </summary>
     [HttpDelete("{id:guid}/photos/{photoId:guid}")]
     [Authorize(Roles = $"{Roles.Admin},{Roles.Caregiver}")]
@@ -555,10 +493,7 @@ public sealed class IncidentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var isAdmin = User.IsInRole(Roles.Admin);
 
@@ -571,10 +506,7 @@ public sealed class IncidentsController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Photo not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Photo not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -582,8 +514,8 @@ public sealed class IncidentsController : ControllerBase
     }
 
     /// <summary>
-    /// Exports an incident report as PDF.
-    /// Includes all incident details and attached photos.
+    ///     Exports an incident report as PDF.
+    ///     Includes all incident details and attached photos.
     /// </summary>
     [HttpGet("{id:guid}/export/pdf")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
@@ -594,18 +526,13 @@ public sealed class IncidentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var isAdmin = User.IsInRole(Roles.Admin);
 
         IReadOnlyList<Guid>? allowedHomeIds = null;
         if (!isAdmin && !User.IsInRole(Roles.Sysadmin))
-        {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-        }
 
         try
         {
@@ -616,7 +543,8 @@ public sealed class IncidentsController : ControllerBase
                 allowedHomeIds,
                 cancellationToken);
 
-            var incident = await _incidentService.GetIncidentByIdAsync(id, currentUserId.Value, isAdmin, allowedHomeIds, cancellationToken);
+            var incident = await _incidentService.GetIncidentByIdAsync(id, currentUserId.Value, isAdmin, allowedHomeIds,
+                cancellationToken);
             var fileName = $"Incident-Report-{incident?.IncidentNumber ?? id.ToString()}.pdf";
 
             return File(pdfBytes, "application/pdf", fileName);
@@ -632,25 +560,4 @@ public sealed class IncidentsController : ControllerBase
     }
 
     #endregion
-
-    private string? GetClientIpAddress()
-    {
-        var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-        if (!string.IsNullOrEmpty(forwardedFor))
-        {
-            return forwardedFor.Split(',').First().Trim();
-        }
-
-        return HttpContext.Connection.RemoteIpAddress?.ToString();
-    }
-
-    private Guid? GetCurrentUserId()
-    {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (Guid.TryParse(userIdClaim, out var userId))
-        {
-            return userId;
-        }
-        return null;
-    }
 }

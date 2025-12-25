@@ -6,8 +6,8 @@ using Microsoft.EntityFrameworkCore;
 namespace LenkCareHomes.Api.Data;
 
 /// <summary>
-/// Application database context for Azure SQL.
-/// Contains all PHI-related data with TDE encryption.
+///     Application database context for Azure SQL.
+///     Contains all PHI-related data with TDE encryption.
 /// </summary>
 public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>
 {
@@ -17,103 +17,103 @@ public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser, Ap
     }
 
     /// <summary>
-    /// Gets or sets the homes table.
+    ///     Gets or sets the homes table.
     /// </summary>
     public DbSet<Home> Homes => Set<Home>();
 
     /// <summary>
-    /// Gets or sets the beds table.
+    ///     Gets or sets the beds table.
     /// </summary>
     public DbSet<Bed> Beds => Set<Bed>();
 
     /// <summary>
-    /// Gets or sets the caregiver home assignments table.
+    ///     Gets or sets the caregiver home assignments table.
     /// </summary>
     public DbSet<CaregiverHomeAssignment> CaregiverHomeAssignments => Set<CaregiverHomeAssignment>();
 
     /// <summary>
-    /// Gets or sets the clients table.
+    ///     Gets or sets the clients table.
     /// </summary>
     public DbSet<Client> Clients => Set<Client>();
 
     /// <summary>
-    /// Gets or sets the ADL logs table.
+    ///     Gets or sets the ADL logs table.
     /// </summary>
     public DbSet<ADLLog> ADLLogs => Set<ADLLog>();
 
     /// <summary>
-    /// Gets or sets the vitals logs table.
+    ///     Gets or sets the vitals logs table.
     /// </summary>
     public DbSet<VitalsLog> VitalsLogs => Set<VitalsLog>();
 
     /// <summary>
-    /// Gets or sets the medication logs table.
+    ///     Gets or sets the medication logs table.
     /// </summary>
     public DbSet<MedicationLog> MedicationLogs => Set<MedicationLog>();
 
     /// <summary>
-    /// Gets or sets the ROM logs table.
+    ///     Gets or sets the ROM logs table.
     /// </summary>
     public DbSet<ROMLog> ROMLogs => Set<ROMLog>();
 
     /// <summary>
-    /// Gets or sets the behavior notes table.
+    ///     Gets or sets the behavior notes table.
     /// </summary>
     public DbSet<BehaviorNote> BehaviorNotes => Set<BehaviorNote>();
 
     /// <summary>
-    /// Gets or sets the activities table.
+    ///     Gets or sets the activities table.
     /// </summary>
     public DbSet<Activity> Activities => Set<Activity>();
 
     /// <summary>
-    /// Gets or sets the activity participants table.
+    ///     Gets or sets the activity participants table.
     /// </summary>
     public DbSet<ActivityParticipant> ActivityParticipants => Set<ActivityParticipant>();
 
     /// <summary>
-    /// Gets or sets the incidents table.
+    ///     Gets or sets the incidents table.
     /// </summary>
     public DbSet<Incident> Incidents => Set<Incident>();
 
     /// <summary>
-    /// Gets or sets the incident follow-ups table.
+    ///     Gets or sets the incident follow-ups table.
     /// </summary>
     public DbSet<IncidentFollowUp> IncidentFollowUps => Set<IncidentFollowUp>();
 
     /// <summary>
-    /// Gets or sets the incident photos table.
+    ///     Gets or sets the incident photos table.
     /// </summary>
     public DbSet<IncidentPhoto> IncidentPhotos => Set<IncidentPhoto>();
 
     /// <summary>
-    /// Gets or sets the documents table.
+    ///     Gets or sets the documents table.
     /// </summary>
     public DbSet<Document> Documents => Set<Document>();
 
     /// <summary>
-    /// Gets or sets the document folders table.
+    ///     Gets or sets the document folders table.
     /// </summary>
     public DbSet<DocumentFolder> DocumentFolders => Set<DocumentFolder>();
 
     /// <summary>
-    /// Gets or sets the document access permissions table.
+    ///     Gets or sets the document access permissions table.
     /// </summary>
     public DbSet<DocumentAccessPermission> DocumentAccessPermissions => Set<DocumentAccessPermission>();
 
     /// <summary>
-    /// Gets or sets the document access history table.
+    ///     Gets or sets the document access history table.
     /// </summary>
     public DbSet<DocumentAccessHistory> DocumentAccessHistory => Set<DocumentAccessHistory>();
 
     /// <summary>
-    /// Gets or sets the user passkeys table.
-    /// Uses 'new' keyword to hide inherited Identity passkey property in favor of custom UserPasskey entity.
+    ///     Gets or sets the user passkeys table.
+    ///     Uses 'new' keyword to hide inherited Identity passkey property in favor of custom UserPasskey entity.
     /// </summary>
     public new DbSet<UserPasskey> UserPasskeys => Set<UserPasskey>();
 
     /// <summary>
-    /// Gets or sets the appointments table.
+    ///     Gets or sets the appointments table.
     /// </summary>
     public DbSet<Appointment> Appointments => Set<Appointment>();
 
@@ -129,7 +129,7 @@ public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser, Ap
             entity.Property(u => u.LastName).HasMaxLength(100).IsRequired();
             entity.Property(u => u.BackupCodesHash).HasMaxLength(2000);
             entity.Property(u => u.InvitationToken).HasMaxLength(500);
-            
+
             entity.HasIndex(u => u.Email).IsUnique();
             entity.HasIndex(u => u.InvitationToken);
 

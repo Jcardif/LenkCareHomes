@@ -3,106 +3,112 @@ using LenkCareHomes.Api.Domain.Enums;
 namespace LenkCareHomes.Api.Models.Reports;
 
 /// <summary>
-/// Request to generate a client summary report.
+///     Request to generate a client summary report.
 /// </summary>
 public sealed record GenerateClientReportRequest
 {
     /// <summary>
-    /// Gets or sets the client ID.
+    ///     Gets or sets the client ID.
     /// </summary>
     public Guid ClientId { get; init; }
 
     /// <summary>
-    /// Gets or sets the start date for the report period.
+    ///     Gets or sets the start date for the report period.
     /// </summary>
     public DateTime StartDate { get; init; }
 
     /// <summary>
-    /// Gets or sets the end date for the report period.
+    ///     Gets or sets the end date for the report period.
     /// </summary>
     public DateTime EndDate { get; init; }
 }
 
 /// <summary>
-/// Request to generate a home summary report.
+///     Request to generate a home summary report.
 /// </summary>
 public sealed record GenerateHomeReportRequest
 {
     /// <summary>
-    /// Gets or sets the home ID.
+    ///     Gets or sets the home ID.
     /// </summary>
     public Guid HomeId { get; init; }
 
     /// <summary>
-    /// Gets or sets the start date for the report period.
+    ///     Gets or sets the start date for the report period.
     /// </summary>
     public DateTime StartDate { get; init; }
 
     /// <summary>
-    /// Gets or sets the end date for the report period.
+    ///     Gets or sets the end date for the report period.
     /// </summary>
     public DateTime EndDate { get; init; }
 }
 
 /// <summary>
-/// Response containing the generated report information.
+///     Response containing the generated report information.
 /// </summary>
 public sealed record ReportGenerationResponse
 {
     /// <summary>
-    /// Gets or sets whether the report generation was successful.
+    ///     Gets or sets whether the report generation was successful.
     /// </summary>
     public bool Success { get; init; }
 
     /// <summary>
-    /// Gets or sets the error message if generation failed.
+    ///     Gets or sets the error message if generation failed.
     /// </summary>
     public string? Error { get; init; }
 
     /// <summary>
-    /// Gets or sets the generated report ID.
+    ///     Gets or sets the generated report ID.
     /// </summary>
     public Guid? ReportId { get; init; }
 
     /// <summary>
-    /// Gets or sets the report file name.
+    ///     Gets or sets the report file name.
     /// </summary>
     public string? FileName { get; init; }
 
     /// <summary>
-    /// Gets or sets the content type.
+    ///     Gets or sets the content type.
     /// </summary>
     public string? ContentType { get; init; }
 
     /// <summary>
-    /// Gets or sets the PDF content as bytes.
+    ///     Gets or sets the PDF content as bytes.
     /// </summary>
     public byte[]? PdfContent { get; init; }
 
     /// <summary>
-    /// Creates a successful response with PDF content.
+    ///     Creates a successful response with PDF content.
     /// </summary>
-    public static ReportGenerationResponse WithContent(Guid reportId, string fileName, byte[] pdfContent) => new()
+    public static ReportGenerationResponse WithContent(Guid reportId, string fileName, byte[] pdfContent)
     {
-        Success = true,
-        ReportId = reportId,
-        FileName = fileName,
-        ContentType = "application/pdf",
-        PdfContent = pdfContent
-    };
+        return new ReportGenerationResponse
+        {
+            Success = true,
+            ReportId = reportId,
+            FileName = fileName,
+            ContentType = "application/pdf",
+            PdfContent = pdfContent
+        };
+    }
 
     /// <summary>
-    /// Creates a failure response.
+    ///     Creates a failure response.
     /// </summary>
-    public static ReportGenerationResponse Failure(string error) => new()
+    public static ReportGenerationResponse Failure(string error)
     {
-        Success = false,
-        Error = error
-    };
+        return new ReportGenerationResponse
+        {
+            Success = false,
+            Error = error
+        };
+    }
 }
 
 /// <summary>
-/// DTO for client demographic information in reports.
+///     DTO for client demographic information in reports.
 /// </summary>
 public sealed record ClientReportInfo
 {
@@ -123,7 +129,7 @@ public sealed record ClientReportInfo
 }
 
 /// <summary>
-/// DTO for home information in reports.
+///     DTO for home information in reports.
 /// </summary>
 public sealed record HomeReportInfo
 {
@@ -139,7 +145,7 @@ public sealed record HomeReportInfo
 }
 
 /// <summary>
-/// DTO for ADL log entry in reports.
+///     DTO for ADL log entry in reports.
 /// </summary>
 public sealed record ADLLogReportEntry
 {
@@ -156,7 +162,7 @@ public sealed record ADLLogReportEntry
 }
 
 /// <summary>
-/// DTO for vitals log entry in reports.
+///     DTO for vitals log entry in reports.
 /// </summary>
 public sealed record VitalsLogReportEntry
 {
@@ -171,7 +177,7 @@ public sealed record VitalsLogReportEntry
 }
 
 /// <summary>
-/// DTO for ROM log entry in reports.
+///     DTO for ROM log entry in reports.
 /// </summary>
 public sealed record ROMLogReportEntry
 {
@@ -184,7 +190,7 @@ public sealed record ROMLogReportEntry
 }
 
 /// <summary>
-/// DTO for behavior note entry in reports.
+///     DTO for behavior note entry in reports.
 /// </summary>
 public sealed record BehaviorNoteReportEntry
 {
@@ -196,7 +202,7 @@ public sealed record BehaviorNoteReportEntry
 }
 
 /// <summary>
-/// DTO for activity entry in reports.
+///     DTO for activity entry in reports.
 /// </summary>
 public sealed record ActivityReportEntry
 {
@@ -210,7 +216,7 @@ public sealed record ActivityReportEntry
 }
 
 /// <summary>
-/// DTO for incident entry in reports.
+///     DTO for incident entry in reports.
 /// </summary>
 public sealed record IncidentReportEntry
 {
@@ -227,7 +233,7 @@ public sealed record IncidentReportEntry
 }
 
 /// <summary>
-/// DTO for appointment entry in reports.
+///     DTO for appointment entry in reports.
 /// </summary>
 public sealed record AppointmentReportEntry
 {
@@ -244,7 +250,7 @@ public sealed record AppointmentReportEntry
 }
 
 /// <summary>
-/// Summary statistics for a client report.
+///     Summary statistics for a client report.
 /// </summary>
 public sealed record ClientReportSummaryStats
 {
@@ -263,7 +269,7 @@ public sealed record ClientReportSummaryStats
 }
 
 /// <summary>
-/// Summary statistics for a home report.
+///     Summary statistics for a home report.
 /// </summary>
 public sealed record HomeReportSummaryStats
 {
@@ -279,7 +285,7 @@ public sealed record HomeReportSummaryStats
 }
 
 /// <summary>
-/// Client summary for home reports.
+///     Client summary for home reports.
 /// </summary>
 public sealed record ClientSummaryForHomeReport
 {
@@ -296,7 +302,7 @@ public sealed record ClientSummaryForHomeReport
 }
 
 /// <summary>
-/// Aggregated data for a client summary report.
+///     Aggregated data for a client summary report.
 /// </summary>
 public sealed record ClientSummaryReportData
 {
@@ -315,7 +321,7 @@ public sealed record ClientSummaryReportData
 }
 
 /// <summary>
-/// Aggregated data for a home summary report.
+///     Aggregated data for a home summary report.
 /// </summary>
 public sealed record HomeSummaryReportData
 {

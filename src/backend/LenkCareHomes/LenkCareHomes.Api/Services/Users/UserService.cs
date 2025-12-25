@@ -4,6 +4,7 @@ using LenkCareHomes.Api.Domain.Constants;
 using LenkCareHomes.Api.Domain.Entities;
 using LenkCareHomes.Api.Models.Users;
 using LenkCareHomes.Api.Services.Audit;
+using LenkCareHomes.Api.Services.Auth;
 using LenkCareHomes.Api.Services.Email;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -12,23 +13,23 @@ using Microsoft.Extensions.Options;
 namespace LenkCareHomes.Api.Services.Users;
 
 /// <summary>
-/// User management service implementation.
+///     User management service implementation.
 /// </summary>
 public sealed class UserService : IUserService
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly ApplicationDbContext _dbContext;
     private readonly IAuditLogService _auditLog;
+    private readonly AuthSettings _authSettings;
+    private readonly ApplicationDbContext _dbContext;
     private readonly IEmailService _emailService;
     private readonly ILogger<UserService> _logger;
-    private readonly Auth.AuthSettings _authSettings;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public UserService(
         UserManager<ApplicationUser> userManager,
         ApplicationDbContext dbContext,
         IAuditLogService auditLog,
         IEmailService emailService,
-        IOptions<Auth.AuthSettings> authSettings,
+        IOptions<AuthSettings> authSettings,
         ILogger<UserService> logger)
     {
         _userManager = userManager;
@@ -58,10 +59,7 @@ public sealed class UserService : IUserService
     public async Task<UserDto?> GetUserByIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user is null)
-        {
-            return null;
-        }
+        if (user is null) return null;
 
         var roles = await _userManager.GetRolesAsync(user);
         return MapToDto(user, roles);
@@ -78,17 +76,14 @@ public sealed class UserService : IUserService
 
         // Validate role
         if (!Roles.All.Contains(request.Role))
-        {
             return new InviteUserResponse { Success = false, Error = $"Invalid role: {request.Role}" };
-        }
 
         // Validate home assignments for caregivers
         if (request.Role == Roles.Caregiver)
         {
             if (request.HomeIds is null || request.HomeIds.Count == 0)
-            {
-                return new InviteUserResponse { Success = false, Error = "Caregivers must be assigned to at least one home." };
-            }
+                return new InviteUserResponse
+                    { Success = false, Error = "Caregivers must be assigned to at least one home." };
 
             // Validate all home IDs exist and are active
             var validHomeIds = await _dbContext.Homes
@@ -97,17 +92,14 @@ public sealed class UserService : IUserService
                 .ToListAsync(cancellationToken);
 
             if (validHomeIds.Count != request.HomeIds.Count)
-            {
-                return new InviteUserResponse { Success = false, Error = "One or more selected homes are invalid or inactive." };
-            }
+                return new InviteUserResponse
+                    { Success = false, Error = "One or more selected homes are invalid or inactive." };
         }
 
         // Check if user already exists
         var existingUser = await _userManager.FindByEmailAsync(request.Email);
         if (existingUser is not null)
-        {
             return new InviteUserResponse { Success = false, Error = "A user with this email already exists." };
-        }
 
         // Generate invitation token
         var invitationToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
@@ -128,13 +120,11 @@ public sealed class UserService : IUserService
 
         var result = await _userManager.CreateAsync(user);
         if (!result.Succeeded)
-        {
             return new InviteUserResponse
             {
                 Success = false,
                 Error = string.Join(", ", result.Errors.Select(e => e.Description))
             };
-        }
 
         // Assign role
         await _userManager.AddToRoleAsync(user, request.Role);
@@ -171,11 +161,10 @@ public sealed class UserService : IUserService
 
         // Send invitation email
         if (string.IsNullOrEmpty(user.Email))
-        {
             throw new InvalidOperationException("User email is required to send invitation");
-        }
 
-        var invitationLink = $"{_authSettings.FrontendBaseUrl}/auth/accept-invitation?token={Uri.EscapeDataString(invitationToken)}";
+        var invitationLink =
+            $"{_authSettings.FrontendBaseUrl}/auth/accept-invitation?token={Uri.EscapeDataString(invitationToken)}";
         await _emailService.SendInvitationEmailAsync(
             user.Email,
             user.FirstName,
@@ -203,20 +192,15 @@ public sealed class UserService : IUserService
         CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user is null)
-        {
-            return new ResendInvitationResponse { Success = false, Error = "User not found." };
-        }
+        if (user is null) return new ResendInvitationResponse { Success = false, Error = "User not found." };
 
         // Check if user has already accepted invitation
         if (user.InvitationAccepted)
-        {
-            return new ResendInvitationResponse 
-            { 
-                Success = false, 
-                Error = "User has already accepted their invitation." 
+            return new ResendInvitationResponse
+            {
+                Success = false,
+                Error = "User has already accepted their invitation."
             };
-        }
 
         // Generate a new invitation token
         var newInvitationToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
@@ -226,21 +210,18 @@ public sealed class UserService : IUserService
 
         var updateResult = await _userManager.UpdateAsync(user);
         if (!updateResult.Succeeded)
-        {
-            return new ResendInvitationResponse 
-            { 
-                Success = false, 
-                Error = "Failed to update invitation token." 
+            return new ResendInvitationResponse
+            {
+                Success = false,
+                Error = "Failed to update invitation token."
             };
-        }
 
         // Send invitation email
         if (string.IsNullOrEmpty(user.Email))
-        {
             return new ResendInvitationResponse { Success = false, Error = "User has no email address." };
-        }
 
-        var invitationLink = $"{_authSettings.FrontendBaseUrl}/auth/accept-invitation?token={Uri.EscapeDataString(newInvitationToken)}";
+        var invitationLink =
+            $"{_authSettings.FrontendBaseUrl}/auth/accept-invitation?token={Uri.EscapeDataString(newInvitationToken)}";
         await _emailService.SendInvitationEmailAsync(
             user.Email,
             user.FirstName,
@@ -257,10 +238,10 @@ public sealed class UserService : IUserService
             $"Resent invitation email to user {user.Email}",
             cancellationToken);
 
-        return new ResendInvitationResponse 
-        { 
-            Success = true, 
-            Message = "Invitation email resent successfully." 
+        return new ResendInvitationResponse
+        {
+            Success = true,
+            Message = "Invitation email resent successfully."
         };
     }
 
@@ -275,25 +256,13 @@ public sealed class UserService : IUserService
         ArgumentNullException.ThrowIfNull(request);
 
         var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user is null)
-        {
-            return null;
-        }
+        if (user is null) return null;
 
-        if (!string.IsNullOrWhiteSpace(request.FirstName))
-        {
-            user.FirstName = request.FirstName;
-        }
+        if (!string.IsNullOrWhiteSpace(request.FirstName)) user.FirstName = request.FirstName;
 
-        if (!string.IsNullOrWhiteSpace(request.LastName))
-        {
-            user.LastName = request.LastName;
-        }
+        if (!string.IsNullOrWhiteSpace(request.LastName)) user.LastName = request.LastName;
 
-        if (request.PhoneNumber is not null)
-        {
-            user.PhoneNumber = request.PhoneNumber;
-        }
+        if (request.PhoneNumber is not null) user.PhoneNumber = request.PhoneNumber;
 
         user.UpdatedAt = DateTime.UtcNow;
 
@@ -321,10 +290,7 @@ public sealed class UserService : IUserService
         CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user is null)
-        {
-            return false;
-        }
+        if (user is null) return false;
 
         user.IsActive = false;
         user.UpdatedAt = DateTime.UtcNow;
@@ -351,10 +317,7 @@ public sealed class UserService : IUserService
         CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user is null)
-        {
-            return false;
-        }
+        if (user is null) return false;
 
         user.IsActive = true;
         user.UpdatedAt = DateTime.UtcNow;
@@ -381,17 +344,11 @@ public sealed class UserService : IUserService
         CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByIdAsync(request.UserId.ToString());
-        if (user is null)
-        {
-            return new MfaResetResponse { Success = false, Error = "User not found." };
-        }
+        if (user is null) return new MfaResetResponse { Success = false, Error = "User not found." };
 
         // Check that the requesting user is a Sysadmin
         var resetByUser = await _userManager.FindByIdAsync(resetById.ToString());
-        if (resetByUser is null)
-        {
-            return new MfaResetResponse { Success = false, Error = "Requesting user not found." };
-        }
+        if (resetByUser is null) return new MfaResetResponse { Success = false, Error = "Requesting user not found." };
 
         var resetByRoles = await _userManager.GetRolesAsync(resetByUser);
         if (!resetByRoles.Contains(Roles.Sysadmin))
@@ -416,21 +373,16 @@ public sealed class UserService : IUserService
 
         // Users cannot reset their own MFA
         if (request.UserId == resetById)
-        {
             return new MfaResetResponse { Success = false, Error = "Users cannot reset their own MFA." };
-        }
 
         // Count and remove all user passkeys
         var passkeys = await _dbContext.UserPasskeys
             .Where(p => p.UserId == request.UserId)
             .ToListAsync(cancellationToken);
 
-        int passkeysRemoved = passkeys.Count;
+        var passkeysRemoved = passkeys.Count;
 
-        if (passkeys.Count > 0)
-        {
-            _dbContext.UserPasskeys.RemoveRange(passkeys);
-        }
+        if (passkeys.Count > 0) _dbContext.UserPasskeys.RemoveRange(passkeys);
 
         // Reset user MFA state
         await _userManager.ResetAuthenticatorKeyAsync(user);
@@ -444,12 +396,10 @@ public sealed class UserService : IUserService
 
         // Send notification email to the affected user
         if (user.Email is not null)
-        {
             await _emailService.SendMfaResetEmailAsync(
                 user.Email,
                 user.FirstName,
                 cancellationToken);
-        }
 
         // Comprehensive audit logging with all HIPAA-required details
         var auditDetails = $"Reset MFA for user {user.Email}. " +
@@ -478,7 +428,8 @@ public sealed class UserService : IUserService
         {
             Success = true,
             PasskeysRemoved = passkeysRemoved,
-            Message = $"MFA reset successfully. {passkeysRemoved} passkey(s) removed. User will need to set up new authentication."
+            Message =
+                $"MFA reset successfully. {passkeysRemoved} passkey(s) removed. User will need to set up new authentication."
         };
     }
 
@@ -490,22 +441,13 @@ public sealed class UserService : IUserService
         string? ipAddress,
         CancellationToken cancellationToken = default)
     {
-        if (!Roles.All.Contains(role))
-        {
-            return false;
-        }
+        if (!Roles.All.Contains(role)) return false;
 
         var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user is null)
-        {
-            return false;
-        }
+        if (user is null) return false;
 
         var result = await _userManager.AddToRoleAsync(user, role);
-        if (!result.Succeeded)
-        {
-            return false;
-        }
+        if (!result.Succeeded) return false;
 
         await _auditLog.LogAuthenticationEventAsync(
             AuditActions.RoleAssigned,
@@ -529,16 +471,10 @@ public sealed class UserService : IUserService
         CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user is null)
-        {
-            return false;
-        }
+        if (user is null) return false;
 
         var result = await _userManager.RemoveFromRoleAsync(user, role);
-        if (!result.Succeeded)
-        {
-            return false;
-        }
+        if (!result.Succeeded) return false;
 
         await _auditLog.LogAuthenticationEventAsync(
             AuditActions.RoleRemoved,
@@ -561,10 +497,7 @@ public sealed class UserService : IUserService
         CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user is null)
-        {
-            return false;
-        }
+        if (user is null) return false;
 
         // Prevent self-deletion
         if (userId == deletedById)
@@ -617,17 +550,20 @@ public sealed class UserService : IUserService
         await _userManager.UpdateAsync(user);
     }
 
-    private static UserDto MapToDto(ApplicationUser user, IList<string> roles) => new()
+    private static UserDto MapToDto(ApplicationUser user, IList<string> roles)
     {
-        Id = user.Id,
-        Email = user.Email ?? string.Empty,
-        FirstName = user.FirstName,
-        LastName = user.LastName,
-        IsActive = user.IsActive,
-        IsMfaSetupComplete = user.IsMfaSetupComplete,
-        InvitationAccepted = user.InvitationAccepted,
-        Roles = roles.ToList(),
-        CreatedAt = user.CreatedAt,
-        UpdatedAt = user.UpdatedAt
-    };
+        return new UserDto
+        {
+            Id = user.Id,
+            Email = user.Email ?? string.Empty,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            IsActive = user.IsActive,
+            IsMfaSetupComplete = user.IsMfaSetupComplete,
+            InvitationAccepted = user.InvitationAccepted,
+            Roles = roles.ToList(),
+            CreatedAt = user.CreatedAt,
+            UpdatedAt = user.UpdatedAt
+        };
+    }
 }

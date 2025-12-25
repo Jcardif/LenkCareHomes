@@ -3,12 +3,12 @@ using LenkCareHomes.Api.Models.Homes;
 namespace LenkCareHomes.Api.Services.Homes;
 
 /// <summary>
-/// Service interface for home management operations.
+///     Service interface for home management operations.
 /// </summary>
 public interface IHomeService
 {
     /// <summary>
-    /// Gets all homes, optionally filtered by allowed home IDs (for caregivers).
+    ///     Gets all homes, optionally filtered by allowed home IDs (for caregivers).
     /// </summary>
     Task<IReadOnlyList<HomeSummaryDto>> GetAllHomesAsync(
         bool includeInactive = false,
@@ -16,12 +16,12 @@ public interface IHomeService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets a home by ID.
+    ///     Gets a home by ID.
     /// </summary>
     Task<HomeDto?> GetHomeByIdAsync(Guid homeId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Creates a new home.
+    ///     Creates a new home.
     /// </summary>
     Task<HomeOperationResponse> CreateHomeAsync(
         CreateHomeRequest request,
@@ -30,7 +30,7 @@ public interface IHomeService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Updates an existing home.
+    ///     Updates an existing home.
     /// </summary>
     Task<HomeOperationResponse> UpdateHomeAsync(
         Guid homeId,
@@ -40,7 +40,7 @@ public interface IHomeService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deactivates a home.
+    ///     Deactivates a home.
     /// </summary>
     Task<HomeOperationResponse> DeactivateHomeAsync(
         Guid homeId,
@@ -49,7 +49,7 @@ public interface IHomeService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Reactivates a home.
+    ///     Reactivates a home.
     /// </summary>
     Task<HomeOperationResponse> ReactivateHomeAsync(
         Guid homeId,

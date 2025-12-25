@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using LenkCareHomes.Api.Models.Auth;
 using LenkCareHomes.Api.Services.Auth;
 using Microsoft.AspNetCore.Authorization;
@@ -6,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LenkCareHomes.Api.Controllers;
 
 /// <summary>
-/// Controller for authentication operations.
+///     Controller for authentication operations.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -22,8 +23,8 @@ public sealed class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Authenticates a user with email and password.
-    /// Returns indication of whether passkey authentication or setup is required.
+    ///     Authenticates a user with email and password.
+    ///     Returns indication of whether passkey authentication or setup is required.
     /// </summary>
     /// <param name="request">Login credentials.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -43,15 +44,13 @@ public sealed class AuthController : ControllerBase
             cancellationToken);
 
         if (!response.Success && !response.RequiresPasskey && !response.RequiresPasskeySetup)
-        {
             return Unauthorized(response);
-        }
 
         return Ok(response);
     }
 
     /// <summary>
-    /// Verifies a backup code for MFA recovery (Sysadmin only).
+    ///     Verifies a backup code for MFA recovery (Sysadmin only).
     /// </summary>
     /// <param name="request">Backup code verification request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -70,17 +69,14 @@ public sealed class AuthController : ControllerBase
             GetUserAgent(),
             cancellationToken);
 
-        if (!response.Success)
-        {
-            return Unauthorized(response);
-        }
+        if (!response.Success) return Unauthorized(response);
 
         return Ok(response);
     }
 
     /// <summary>
-    /// Initiates passkey-based MFA setup for a user.
-    /// Generates backup codes only for Sysadmin users.
+    ///     Initiates passkey-based MFA setup for a user.
+    ///     Generates backup codes only for Sysadmin users.
     /// </summary>
     /// <param name="userId">User ID.</param>
     /// <param name="passkeySetupToken">Temporary token for validation.</param>
@@ -112,7 +108,7 @@ public sealed class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Confirms MFA setup after the user has registered at least one passkey.
+    ///     Confirms MFA setup after the user has registered at least one passkey.
     /// </summary>
     /// <param name="request">MFA setup confirmation request.</param>
     /// <param name="passkeySetupToken">Temporary token for validation.</param>
@@ -129,15 +125,16 @@ public sealed class AuthController : ControllerBase
     {
         var success = await _authService.ConfirmMfaSetupAsync(request, passkeySetupToken, cancellationToken);
         if (!success)
-        {
-            return BadRequest(new { error = "MFA setup confirmation failed. Ensure at least one passkey is registered and token is valid." });
-        }
+            return BadRequest(new
+            {
+                error = "MFA setup confirmation failed. Ensure at least one passkey is registered and token is valid."
+            });
 
         return Ok(new { message = "MFA setup completed successfully." });
     }
 
     /// <summary>
-    /// Logs out the current user.
+    ///     Logs out the current user.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Success message.</returns>
@@ -148,19 +145,17 @@ public sealed class AuthController : ControllerBase
     {
         var userId = GetCurrentUserId();
         if (userId is not null)
-        {
             await _authService.LogoutAsync(
                 userId.Value,
                 GetClientIpAddress(),
                 GetUserAgent(),
                 cancellationToken);
-        }
 
         return Ok(new { message = "Logged out successfully." });
     }
 
     /// <summary>
-    /// Gets the current authenticated user's details.
+    ///     Gets the current authenticated user's details.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Current user details.</returns>
@@ -172,25 +167,20 @@ public sealed class AuthController : ControllerBase
     {
         var userId = GetCurrentUserId();
         if (userId is null)
-        {
             return Unauthorized(new CurrentUserResponse
             {
                 Success = false,
                 Error = "Not authenticated."
             });
-        }
 
         var response = await _authService.GetCurrentUserAsync(userId.Value, cancellationToken);
-        if (!response.Success)
-        {
-            return Unauthorized(response);
-        }
+        if (!response.Success) return Unauthorized(response);
 
         return Ok(response);
     }
 
     /// <summary>
-    /// Initiates a password reset request.
+    ///     Initiates a password reset request.
     /// </summary>
     /// <param name="request">Password reset request with email.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -212,7 +202,7 @@ public sealed class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Resets a user's password using a reset token.
+    ///     Resets a user's password using a reset token.
     /// </summary>
     /// <param name="request">Password reset confirmation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -231,15 +221,14 @@ public sealed class AuthController : ControllerBase
             cancellationToken);
 
         if (!success)
-        {
-            return BadRequest(new { error = "Invalid or expired reset token, or password does not meet requirements." });
-        }
+            return BadRequest(new
+                { error = "Invalid or expired reset token, or password does not meet requirements." });
 
         return Ok(new { message = "Password reset successfully." });
     }
 
     /// <summary>
-    /// Accepts an invitation and sets up the user account.
+    ///     Accepts an invitation and sets up the user account.
     /// </summary>
     /// <param name="request">Invitation acceptance request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -257,16 +246,13 @@ public sealed class AuthController : ControllerBase
             GetClientIpAddress(),
             cancellationToken);
 
-        if (!response.Success)
-        {
-            return BadRequest(response);
-        }
+        if (!response.Success) return BadRequest(response);
 
         return Ok(response);
     }
 
     /// <summary>
-    /// Updates user profile during account setup.
+    ///     Updates user profile during account setup.
     /// </summary>
     /// <param name="userId">User ID.</param>
     /// <param name="request">Profile update request.</param>
@@ -287,10 +273,7 @@ public sealed class AuthController : ControllerBase
         try
         {
             var success = await _authService.UpdateProfileAsync(userId, request, passkeySetupToken, cancellationToken);
-            if (!success)
-            {
-                return BadRequest(new { error = "Failed to update profile. Check if token is valid." });
-            }
+            if (!success) return BadRequest(new { error = "Failed to update profile. Check if token is valid." });
 
             return Ok(new { message = "Profile updated successfully." });
         }
@@ -301,7 +284,7 @@ public sealed class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Completes the setup process and automatically logs in the user.
+    ///     Completes the setup process and automatically logs in the user.
     /// </summary>
     /// <param name="userId">User ID.</param>
     /// <param name="passkeySetupToken">Temporary token for validation.</param>
@@ -326,10 +309,7 @@ public sealed class AuthController : ControllerBase
                 GetUserAgent(),
                 cancellationToken);
 
-            if (!response.Success)
-            {
-                return BadRequest(response);
-            }
+            if (!response.Success) return BadRequest(response);
 
             return Ok(response);
         }
@@ -340,8 +320,8 @@ public sealed class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Regenerates backup codes for the current Sysadmin user.
-    /// This invalidates all previous backup codes.
+    ///     Regenerates backup codes for the current Sysadmin user.
+    ///     This invalidates all previous backup codes.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Response with newly generated backup codes.</returns>
@@ -356,23 +336,18 @@ public sealed class AuthController : ControllerBase
     {
         var userId = GetCurrentUserId();
         if (!userId.HasValue)
-        {
             return Unauthorized(new RegenerateBackupCodesResponse
             {
                 Success = false,
                 Error = "User not authenticated."
             });
-        }
 
         var response = await _authService.RegenerateBackupCodesAsync(
             userId.Value,
             GetClientIpAddress(),
             cancellationToken);
 
-        if (!response.Success)
-        {
-            return BadRequest(response);
-        }
+        if (!response.Success) return BadRequest(response);
 
         return Ok(response);
     }
@@ -381,10 +356,7 @@ public sealed class AuthController : ControllerBase
     {
         // Check for forwarded headers first (for reverse proxy scenarios)
         var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-        if (!string.IsNullOrEmpty(forwardedFor))
-        {
-            return forwardedFor.Split(',').First().Trim();
-        }
+        if (!string.IsNullOrEmpty(forwardedFor)) return forwardedFor.Split(',').First().Trim();
 
         return HttpContext.Connection.RemoteIpAddress?.ToString();
     }
@@ -396,11 +368,8 @@ public sealed class AuthController : ControllerBase
 
     private Guid? GetCurrentUserId()
     {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (Guid.TryParse(userIdClaim, out var userId))
-        {
-            return userId;
-        }
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(userIdClaim, out var userId)) return userId;
         return null;
     }
 }

@@ -1,7 +1,7 @@
 namespace LenkCareHomes.Api.Models.Homes;
 
 /// <summary>
-/// DTO for home information.
+///     DTO for home information.
 /// </summary>
 public sealed record HomeDto
 {
@@ -23,7 +23,7 @@ public sealed record HomeDto
 }
 
 /// <summary>
-/// Summary DTO for home listings.
+///     Summary DTO for home listings.
 /// </summary>
 public sealed record HomeSummaryDto
 {
@@ -38,48 +38,48 @@ public sealed record HomeSummaryDto
 }
 
 /// <summary>
-/// Request model for creating a home.
+///     Request model for creating a home.
 /// </summary>
 public sealed record CreateHomeRequest
 {
     /// <summary>
-    /// Gets the name of the home.
+    ///     Gets the name of the home.
     /// </summary>
     public required string Name { get; init; }
 
     /// <summary>
-    /// Gets the street address.
+    ///     Gets the street address.
     /// </summary>
     public required string Address { get; init; }
 
     /// <summary>
-    /// Gets the city.
+    ///     Gets the city.
     /// </summary>
     public required string City { get; init; }
 
     /// <summary>
-    /// Gets the state.
+    ///     Gets the state.
     /// </summary>
     public required string State { get; init; }
 
     /// <summary>
-    /// Gets the ZIP code.
+    ///     Gets the ZIP code.
     /// </summary>
     public required string ZipCode { get; init; }
 
     /// <summary>
-    /// Gets the phone number.
+    ///     Gets the phone number.
     /// </summary>
     public string? PhoneNumber { get; init; }
 
     /// <summary>
-    /// Gets the maximum capacity (number of beds).
+    ///     Gets the maximum capacity (number of beds).
     /// </summary>
     public required int Capacity { get; init; }
 }
 
 /// <summary>
-/// Request model for updating a home.
+///     Request model for updating a home.
 /// </summary>
 public sealed record UpdateHomeRequest
 {
@@ -93,7 +93,7 @@ public sealed record UpdateHomeRequest
 }
 
 /// <summary>
-/// Response model for home operations.
+///     Response model for home operations.
 /// </summary>
 public sealed record HomeOperationResponse
 {

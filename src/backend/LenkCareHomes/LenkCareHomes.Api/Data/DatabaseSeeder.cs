@@ -6,12 +6,12 @@ using Microsoft.EntityFrameworkCore;
 namespace LenkCareHomes.Api.Data;
 
 /// <summary>
-/// Service for seeding initial data into the database.
+///     Service for seeding initial data into the database.
 /// </summary>
 public static class DatabaseSeeder
 {
     /// <summary>
-    /// Seeds roles and initial admin user into the database.
+    ///     Seeds roles and initial admin user into the database.
     /// </summary>
     public static async Task SeedAsync(
         IServiceProvider serviceProvider,
@@ -39,38 +39,35 @@ public static class DatabaseSeeder
         {
             new ApplicationRole(Roles.Admin)
             {
-                Description = "Administrator with full system access. Can manage homes, beds, clients, caregivers, documents, reports, and audit logs.",
+                Description =
+                    "Administrator with full system access. Can manage homes, beds, clients, caregivers, documents, reports, and audit logs.",
                 HasPhiAccess = true
             },
             new ApplicationRole(Roles.Caregiver)
             {
-                Description = "Caregiver with limited home-scoped access. Can view clients, log ADLs/vitals/notes, view permitted documents (no download).",
+                Description =
+                    "Caregiver with limited home-scoped access. Can view clients, log ADLs/vitals/notes, view permitted documents (no download).",
                 HasPhiAccess = true
             },
             new ApplicationRole(Roles.Sysadmin)
             {
-                Description = "System administrator for maintenance only. Cannot access or modify PHI - only system configuration and audit logs.",
+                Description =
+                    "System administrator for maintenance only. Cannot access or modify PHI - only system configuration and audit logs.",
                 HasPhiAccess = false
             }
         };
 
         foreach (var role in roles)
-        {
             if (!await roleManager.RoleExistsAsync(role.Name!))
             {
                 var result = await roleManager.CreateAsync(role);
                 if (result.Succeeded)
-                {
                     logger.LogInformation("Created role: {RoleName}", role.Name);
-                }
                 else
-                {
                     logger.LogError("Failed to create role {RoleName}: {Errors}",
                         role.Name,
                         string.Join(", ", result.Errors.Select(e => e.Description)));
-                }
             }
-        }
     }
 
     private static async Task SeedAdminUserAsync(
@@ -87,7 +84,8 @@ public static class DatabaseSeeder
         // Skip if not configured (for non-development environments)
         if (string.IsNullOrWhiteSpace(adminEmail) || string.IsNullOrWhiteSpace(adminPassword))
         {
-            logger.LogWarning("Initial admin user not configured. Set SeedAdmin:Email and SeedAdmin:Password in configuration.");
+            logger.LogWarning(
+                "Initial admin user not configured. Set SeedAdmin:Email and SeedAdmin:Password in configuration.");
             return;
         }
 

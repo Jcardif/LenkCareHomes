@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace LenkCareHomes.Api.Services.Reports;
 
 /// <summary>
-/// Service for generating report data with aggregation.
+///     Service for generating report data with aggregation.
 /// </summary>
 public sealed class ReportService : IReportService
 {
@@ -19,7 +19,7 @@ public sealed class ReportService : IReportService
         _logger = logger;
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<ClientSummaryReportData?> GetClientSummaryDataAsync(
         Guid clientId,
         DateTime startDate,
@@ -71,11 +71,13 @@ public sealed class ReportService : IReportService
         var appointments = await GetClientAppointmentsAsync(clientId, startDate, endDate, cancellationToken);
 
         // Calculate summary statistics
-        var stats = CalculateClientStats(adlLogs, vitalsLogs, romLogs, behaviorNotes, activities, incidents, appointments);
+        var stats = CalculateClientStats(adlLogs, vitalsLogs, romLogs, behaviorNotes, activities, incidents,
+            appointments);
 
         _logger.LogInformation(
             "Client report data aggregated: {ADLCount} ADLs, {VitalsCount} Vitals, {ROMCount} ROM, {BehaviorCount} Behavior, {ActivityCount} Activities, {IncidentCount} Incidents, {AppointmentCount} Appointments",
-            adlLogs.Count, vitalsLogs.Count, romLogs.Count, behaviorNotes.Count, activities.Count, incidents.Count, appointments.Count);
+            adlLogs.Count, vitalsLogs.Count, romLogs.Count, behaviorNotes.Count, activities.Count, incidents.Count,
+            appointments.Count);
 
         return new ClientSummaryReportData
         {
@@ -94,7 +96,7 @@ public sealed class ReportService : IReportService
         };
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<HomeSummaryReportData?> GetHomeSummaryDataAsync(
         Guid homeId,
         DateTime startDate,
@@ -162,19 +164,19 @@ public sealed class ReportService : IReportService
         };
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<bool> ClientExistsAsync(Guid clientId, CancellationToken cancellationToken = default)
     {
         return await _context.Clients.AnyAsync(c => c.Id == clientId, cancellationToken);
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<bool> HomeExistsAsync(Guid homeId, CancellationToken cancellationToken = default)
     {
         return await _context.Homes.AnyAsync(h => h.Id == homeId, cancellationToken);
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<Guid?> GetClientHomeIdAsync(Guid clientId, CancellationToken cancellationToken = default)
     {
         return await _context.Clients
@@ -273,7 +275,7 @@ public sealed class ReportService : IReportService
     {
         return await _context.ActivityParticipants
             .Include(ap => ap.Activity)
-                .ThenInclude(a => a!.CreatedBy)
+            .ThenInclude(a => a!.CreatedBy)
             .Where(ap => ap.ClientId == clientId && ap.Activity!.Date >= startDate && ap.Activity.Date <= endDate)
             .OrderBy(ap => ap.Activity!.Date)
             .AsNoTracking()
@@ -322,9 +324,9 @@ public sealed class ReportService : IReportService
             .Include(i => i.ReportedBy)
             .Include(i => i.Client)
             .Where(i => i.ClientId == clientId
-                && i.OccurredAt >= startDate
-                && i.OccurredAt <= endDate
-                && i.Status != IncidentStatus.Draft) // Only include submitted incidents
+                        && i.OccurredAt >= startDate
+                        && i.OccurredAt <= endDate
+                        && i.Status != IncidentStatus.Draft) // Only include submitted incidents
             .OrderBy(i => i.OccurredAt)
             .AsNoTracking()
             .Select(i => new IncidentReportEntry
@@ -352,9 +354,9 @@ public sealed class ReportService : IReportService
             .Include(i => i.ReportedBy)
             .Include(i => i.Client)
             .Where(i => i.HomeId == homeId
-                && i.OccurredAt >= startDate
-                && i.OccurredAt <= endDate
-                && i.Status != IncidentStatus.Draft) // Only include submitted incidents
+                        && i.OccurredAt >= startDate
+                        && i.OccurredAt <= endDate
+                        && i.Status != IncidentStatus.Draft) // Only include submitted incidents
             .OrderBy(i => i.OccurredAt)
             .AsNoTracking()
             .Select(i => new IncidentReportEntry
@@ -425,10 +427,7 @@ public sealed class ReportService : IReportService
     private async Task<IReadOnlyList<ClientSummaryForHomeReport>> GetClientSummariesForHomeAsync(
         List<Guid> clientIds, DateTime startDate, DateTime endDate, CancellationToken cancellationToken)
     {
-        if (clientIds.Count == 0)
-        {
-            return [];
-        }
+        if (clientIds.Count == 0) return [];
 
         // Get client basic info
         var clients = await _context.Clients
@@ -464,17 +463,18 @@ public sealed class ReportService : IReportService
 
         var activityCounts = await _context.ActivityParticipants
             .Include(ap => ap.Activity)
-            .Where(ap => clientIds.Contains(ap.ClientId) && ap.Activity!.Date >= startDate && ap.Activity.Date <= endDate)
+            .Where(ap => clientIds.Contains(ap.ClientId) && ap.Activity!.Date >= startDate &&
+                         ap.Activity.Date <= endDate)
             .GroupBy(ap => ap.ClientId)
             .Select(g => new { ClientId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.ClientId, x => x.Count, cancellationToken);
 
         var incidentCounts = await _context.Incidents
             .Where(i => i.ClientId.HasValue
-                && clientIds.Contains(i.ClientId.Value)
-                && i.OccurredAt >= startDate
-                && i.OccurredAt <= endDate
-                && i.Status != IncidentStatus.Draft)
+                        && clientIds.Contains(i.ClientId.Value)
+                        && i.OccurredAt >= startDate
+                        && i.OccurredAt <= endDate
+                        && i.Status != IncidentStatus.Draft)
             .GroupBy(i => i.ClientId!.Value)
             .Select(g => new { ClientId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.ClientId, x => x.Count, cancellationToken);
@@ -515,7 +515,6 @@ public sealed class ReportService : IReportService
         var systolicValues = new List<int>();
         var diastolicValues = new List<int>();
         foreach (var vital in vitalsLogs)
-        {
             if (!string.IsNullOrEmpty(vital.BloodPressure) && vital.BloodPressure.Contains('/'))
             {
                 var parts = vital.BloodPressure.Split('/');
@@ -525,10 +524,10 @@ public sealed class ReportService : IReportService
                     diastolicValues.Add(dia);
                 }
             }
-        }
 
         var pulseValues = vitalsLogs.Where(v => v.Pulse.HasValue).Select(v => v.Pulse!.Value).ToList();
-        var oxygenValues = vitalsLogs.Where(v => v.OxygenSaturation.HasValue).Select(v => v.OxygenSaturation!.Value).ToList();
+        var oxygenValues = vitalsLogs.Where(v => v.OxygenSaturation.HasValue).Select(v => v.OxygenSaturation!.Value)
+            .ToList();
 
         return new ClientReportSummaryStats
         {

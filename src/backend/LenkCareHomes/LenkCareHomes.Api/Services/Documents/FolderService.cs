@@ -9,12 +9,12 @@ using Microsoft.EntityFrameworkCore;
 namespace LenkCareHomes.Api.Services.Documents;
 
 /// <summary>
-/// Service for folder management operations.
+///     Service for folder management operations.
 /// </summary>
 public sealed class FolderService : IFolderService
 {
-    private readonly ApplicationDbContext _dbContext;
     private readonly IAuditLogService _auditLogService;
+    private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<FolderService> _logger;
 
     public FolderService(
@@ -36,21 +36,14 @@ public sealed class FolderService : IFolderService
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (string.IsNullOrWhiteSpace(request.Name))
-        {
-            return FolderOperationResponse.Fail("Folder name is required.");
-        }
+        if (string.IsNullOrWhiteSpace(request.Name)) return FolderOperationResponse.Fail("Folder name is required.");
 
         // Validate scope-specific requirements
         if (request.Scope == DocumentScope.Client && request.ClientId is null)
-        {
             return FolderOperationResponse.Fail("Client ID is required for client-scoped folders.");
-        }
 
         if (request.Scope == DocumentScope.Home && request.HomeId is null)
-        {
             return FolderOperationResponse.Fail("Home ID is required for home-scoped folders.");
-        }
 
         // Validate parent folder if specified
         if (request.ParentFolderId is not null)
@@ -58,33 +51,25 @@ public sealed class FolderService : IFolderService
             var parentFolder = await _dbContext.DocumentFolders
                 .FirstOrDefaultAsync(f => f.Id == request.ParentFolderId && f.IsActive, cancellationToken);
 
-            if (parentFolder is null)
-            {
-                return FolderOperationResponse.Fail("Parent folder not found.");
-            }
+            if (parentFolder is null) return FolderOperationResponse.Fail("Parent folder not found.");
 
             // Ensure scope matches parent
             if (parentFolder.Scope != request.Scope)
-            {
                 return FolderOperationResponse.Fail("Folder scope must match parent folder scope.");
-            }
         }
 
         // Check for duplicate name in same location
         var exists = await _dbContext.DocumentFolders
             .AnyAsync(f =>
-                f.Name == request.Name &&
-                f.ParentFolderId == request.ParentFolderId &&
-                f.Scope == request.Scope &&
-                f.ClientId == request.ClientId &&
-                f.HomeId == request.HomeId &&
-                f.IsActive,
+                    f.Name == request.Name &&
+                    f.ParentFolderId == request.ParentFolderId &&
+                    f.Scope == request.Scope &&
+                    f.ClientId == request.ClientId &&
+                    f.HomeId == request.HomeId &&
+                    f.IsActive,
                 cancellationToken);
 
-        if (exists)
-        {
-            return FolderOperationResponse.Fail("A folder with this name already exists in this location.");
-        }
+        if (exists) return FolderOperationResponse.Fail("A folder with this name already exists in this location.");
 
         var folder = new DocumentFolder
         {
@@ -135,25 +120,18 @@ public sealed class FolderService : IFolderService
             .Include(f => f.CreatedBy)
             .Include(f => f.ChildFolders.Where(c => c.IsActive))
             .Include(f => f.Documents.Where(d => d.IsActive))
-                .ThenInclude(d => d.UploadedBy)
+            .ThenInclude(d => d.UploadedBy)
             .Include(f => f.Documents.Where(d => d.IsActive))
-                .ThenInclude(d => d.AccessPermissions)
+            .ThenInclude(d => d.AccessPermissions)
             .AsNoTracking()
             .FirstOrDefaultAsync(f => f.Id == folderId && f.IsActive, cancellationToken);
 
-        if (folder is null)
-        {
-            return null;
-        }
+        if (folder is null) return null;
 
         // Check access for caregivers
         if (!isAdmin && folder.HomeId is not null && allowedHomeIds is not null)
-        {
             if (!allowedHomeIds.Contains(folder.HomeId.Value))
-            {
                 return null;
-            }
-        }
 
         var breadcrumbs = await GetBreadcrumbsAsync(folderId, cancellationToken);
 
@@ -178,30 +156,20 @@ public sealed class FolderService : IFolderService
             .AsNoTracking();
 
         // Apply scope filter
-        if (scope is not null)
-        {
-            query = query.Where(f => f.Scope == scope);
-        }
+        if (scope is not null) query = query.Where(f => f.Scope == scope);
 
-        if (clientId is not null)
-        {
-            query = query.Where(f => f.ClientId == clientId);
-        }
+        if (clientId is not null) query = query.Where(f => f.ClientId == clientId);
 
-        if (homeId is not null)
-        {
-            query = query.Where(f => f.HomeId == homeId);
-        }
+        if (homeId is not null) query = query.Where(f => f.HomeId == homeId);
 
         // Apply home scope for caregivers
         if (!isAdmin && allowedHomeIds is not null)
-        {
             query = query.Where(f =>
                 f.Scope == DocumentScope.General ||
                 f.Scope == DocumentScope.Business ||
                 (f.HomeId != null && allowedHomeIds.Contains(f.HomeId.Value)) ||
-                (f.ClientId != null && _dbContext.Clients.Any(c => c.Id == f.ClientId && allowedHomeIds.Contains(c.HomeId))));
-        }
+                (f.ClientId != null &&
+                 _dbContext.Clients.Any(c => c.Id == f.ClientId && allowedHomeIds.Contains(c.HomeId))));
 
         var folders = await query.ToListAsync(cancellationToken);
 
@@ -227,30 +195,20 @@ public sealed class FolderService : IFolderService
             .Where(f => f.IsActive && f.ParentFolderId == null)
             .AsNoTracking();
 
-        if (scope is not null)
-        {
-            query = query.Where(f => f.Scope == scope);
-        }
+        if (scope is not null) query = query.Where(f => f.Scope == scope);
 
-        if (clientId is not null)
-        {
-            query = query.Where(f => f.ClientId == clientId);
-        }
+        if (clientId is not null) query = query.Where(f => f.ClientId == clientId);
 
-        if (homeId is not null)
-        {
-            query = query.Where(f => f.HomeId == homeId);
-        }
+        if (homeId is not null) query = query.Where(f => f.HomeId == homeId);
 
         // Apply home scope for caregivers
         if (!isAdmin && allowedHomeIds is not null)
-        {
             query = query.Where(f =>
                 f.Scope == DocumentScope.General ||
                 f.Scope == DocumentScope.Business ||
                 (f.HomeId != null && allowedHomeIds.Contains(f.HomeId.Value)) ||
-                (f.ClientId != null && _dbContext.Clients.Any(c => c.Id == f.ClientId && allowedHomeIds.Contains(c.HomeId))));
-        }
+                (f.ClientId != null &&
+                 _dbContext.Clients.Any(c => c.Id == f.ClientId && allowedHomeIds.Contains(c.HomeId))));
 
         var folders = await query.OrderBy(f => f.Name).ToListAsync(cancellationToken);
 
@@ -270,34 +228,25 @@ public sealed class FolderService : IFolderService
         var folder = await _dbContext.DocumentFolders
             .FirstOrDefaultAsync(f => f.Id == folderId && f.IsActive, cancellationToken);
 
-        if (folder is null)
-        {
-            return FolderOperationResponse.Fail("Folder not found.");
-        }
+        if (folder is null) return FolderOperationResponse.Fail("Folder not found.");
 
-        if (folder.IsSystemFolder)
-        {
-            return FolderOperationResponse.Fail("System folders cannot be modified.");
-        }
+        if (folder.IsSystemFolder) return FolderOperationResponse.Fail("System folders cannot be modified.");
 
         if (!string.IsNullOrWhiteSpace(request.Name))
         {
             // Check for duplicate name
             var exists = await _dbContext.DocumentFolders
                 .AnyAsync(f =>
-                    f.Id != folderId &&
-                    f.Name == request.Name &&
-                    f.ParentFolderId == folder.ParentFolderId &&
-                    f.Scope == folder.Scope &&
-                    f.ClientId == folder.ClientId &&
-                    f.HomeId == folder.HomeId &&
-                    f.IsActive,
+                        f.Id != folderId &&
+                        f.Name == request.Name &&
+                        f.ParentFolderId == folder.ParentFolderId &&
+                        f.Scope == folder.Scope &&
+                        f.ClientId == folder.ClientId &&
+                        f.HomeId == folder.HomeId &&
+                        f.IsActive,
                     cancellationToken);
 
-            if (exists)
-            {
-                return FolderOperationResponse.Fail("A folder with this name already exists in this location.");
-            }
+            if (exists) return FolderOperationResponse.Fail("A folder with this name already exists in this location.");
 
             folder.Name = request.Name.Trim();
         }
@@ -335,42 +284,27 @@ public sealed class FolderService : IFolderService
         var folder = await _dbContext.DocumentFolders
             .FirstOrDefaultAsync(f => f.Id == folderId && f.IsActive, cancellationToken);
 
-        if (folder is null)
-        {
-            return FolderOperationResponse.Fail("Folder not found.");
-        }
+        if (folder is null) return FolderOperationResponse.Fail("Folder not found.");
 
-        if (folder.IsSystemFolder)
-        {
-            return FolderOperationResponse.Fail("System folders cannot be moved.");
-        }
+        if (folder.IsSystemFolder) return FolderOperationResponse.Fail("System folders cannot be moved.");
 
         // Validate new parent
         if (request.NewParentFolderId is not null)
         {
             if (request.NewParentFolderId == folderId)
-            {
                 return FolderOperationResponse.Fail("Cannot move folder into itself.");
-            }
 
             var newParent = await _dbContext.DocumentFolders
                 .FirstOrDefaultAsync(f => f.Id == request.NewParentFolderId && f.IsActive, cancellationToken);
 
-            if (newParent is null)
-            {
-                return FolderOperationResponse.Fail("Target folder not found.");
-            }
+            if (newParent is null) return FolderOperationResponse.Fail("Target folder not found.");
 
             if (newParent.Scope != folder.Scope)
-            {
                 return FolderOperationResponse.Fail("Cannot move folder to a different scope.");
-            }
 
             // Check for circular reference
             if (await IsDescendantOfAsync(request.NewParentFolderId.Value, folderId, cancellationToken))
-            {
                 return FolderOperationResponse.Fail("Cannot move folder into its own subfolder.");
-            }
         }
 
         folder.ParentFolderId = request.NewParentFolderId;
@@ -406,25 +340,17 @@ public sealed class FolderService : IFolderService
             .Include(f => f.Documents.Where(d => d.IsActive))
             .FirstOrDefaultAsync(f => f.Id == folderId && f.IsActive, cancellationToken);
 
-        if (folder is null)
-        {
-            return FolderOperationResponse.Fail("Folder not found.");
-        }
+        if (folder is null) return FolderOperationResponse.Fail("Folder not found.");
 
-        if (folder.IsSystemFolder)
-        {
-            return FolderOperationResponse.Fail("System folders cannot be deleted.");
-        }
+        if (folder.IsSystemFolder) return FolderOperationResponse.Fail("System folders cannot be deleted.");
 
         if (folder.ChildFolders.Count > 0)
-        {
-            return FolderOperationResponse.Fail("Cannot delete folder with subfolders. Please delete or move subfolders first.");
-        }
+            return FolderOperationResponse.Fail(
+                "Cannot delete folder with subfolders. Please delete or move subfolders first.");
 
         if (folder.Documents.Count > 0)
-        {
-            return FolderOperationResponse.Fail("Cannot delete folder with documents. Please delete or move documents first.");
-        }
+            return FolderOperationResponse.Fail(
+                "Cannot delete folder with documents. Please delete or move documents first.");
 
         folder.IsActive = false;
         folder.UpdatedAt = DateTime.UtcNow;
@@ -459,14 +385,10 @@ public sealed class FolderService : IFolderService
         // For Client and Home scopes at root level (no folder, no clientId/homeId selected),
         // show clients/homes as virtual folders
         if (query.FolderId is null && query.Scope == DocumentScope.Client && query.ClientId is null)
-        {
             return await BrowseClientsAsVirtualFoldersAsync(query, userId, isAdmin, allowedHomeIds, cancellationToken);
-        }
 
         if (query.FolderId is null && query.Scope == DocumentScope.Home && query.HomeId is null)
-        {
             return await BrowseHomesAsVirtualFoldersAsync(query, userId, isAdmin, allowedHomeIds, cancellationToken);
-        }
 
         FolderDto? currentFolder = null;
         IReadOnlyList<BreadcrumbItem> breadcrumbs = [];
@@ -474,16 +396,15 @@ public sealed class FolderService : IFolderService
         // If folder is specified, get folder details
         if (query.FolderId is not null)
         {
-            currentFolder = await GetFolderByIdAsync(query.FolderId.Value, userId, isAdmin, allowedHomeIds, cancellationToken);
-            if (currentFolder is not null)
-            {
-                breadcrumbs = currentFolder.Breadcrumbs;
-            }
+            currentFolder =
+                await GetFolderByIdAsync(query.FolderId.Value, userId, isAdmin, allowedHomeIds, cancellationToken);
+            if (currentFolder is not null) breadcrumbs = currentFolder.Breadcrumbs;
         }
         else
         {
             // Build breadcrumbs based on scope and client/home selection
-            breadcrumbs = await BuildBreadcrumbsForContextAsync(query.Scope, query.ClientId, query.HomeId, cancellationToken);
+            breadcrumbs =
+                await BuildBreadcrumbsForContextAsync(query.Scope, query.ClientId, query.HomeId, cancellationToken);
         }
 
         // Get folders at current level
@@ -496,30 +417,20 @@ public sealed class FolderService : IFolderService
             .AsNoTracking();
 
         // Apply filters
-        if (query.Scope is not null)
-        {
-            foldersQuery = foldersQuery.Where(f => f.Scope == query.Scope);
-        }
+        if (query.Scope is not null) foldersQuery = foldersQuery.Where(f => f.Scope == query.Scope);
 
-        if (query.ClientId is not null)
-        {
-            foldersQuery = foldersQuery.Where(f => f.ClientId == query.ClientId);
-        }
+        if (query.ClientId is not null) foldersQuery = foldersQuery.Where(f => f.ClientId == query.ClientId);
 
-        if (query.HomeId is not null)
-        {
-            foldersQuery = foldersQuery.Where(f => f.HomeId == query.HomeId);
-        }
+        if (query.HomeId is not null) foldersQuery = foldersQuery.Where(f => f.HomeId == query.HomeId);
 
         // Apply home scope for caregivers
         if (!isAdmin && allowedHomeIds is not null)
-        {
             foldersQuery = foldersQuery.Where(f =>
                 f.Scope == DocumentScope.General ||
                 f.Scope == DocumentScope.Business ||
                 (f.HomeId != null && allowedHomeIds.Contains(f.HomeId.Value)) ||
-                (f.ClientId != null && _dbContext.Clients.Any(c => c.Id == f.ClientId && allowedHomeIds.Contains(c.HomeId))));
-        }
+                (f.ClientId != null &&
+                 _dbContext.Clients.Any(c => c.Id == f.ClientId && allowedHomeIds.Contains(c.HomeId))));
 
         var folders = await foldersQuery.OrderBy(f => f.Name).ToListAsync(cancellationToken);
 
@@ -534,25 +445,14 @@ public sealed class FolderService : IFolderService
             .AsNoTracking();
 
         // Apply filters
-        if (query.Scope is not null)
-        {
-            documentsQuery = documentsQuery.Where(d => d.Scope == query.Scope);
-        }
+        if (query.Scope is not null) documentsQuery = documentsQuery.Where(d => d.Scope == query.Scope);
 
-        if (query.ClientId is not null)
-        {
-            documentsQuery = documentsQuery.Where(d => d.ClientId == query.ClientId);
-        }
+        if (query.ClientId is not null) documentsQuery = documentsQuery.Where(d => d.ClientId == query.ClientId);
 
-        if (query.HomeId is not null)
-        {
-            documentsQuery = documentsQuery.Where(d => d.HomeId == query.HomeId);
-        }
+        if (query.HomeId is not null) documentsQuery = documentsQuery.Where(d => d.HomeId == query.HomeId);
 
         if (query.DocumentType is not null)
-        {
             documentsQuery = documentsQuery.Where(d => d.DocumentType == query.DocumentType);
-        }
 
         if (!string.IsNullOrWhiteSpace(query.SearchText))
         {
@@ -565,13 +465,12 @@ public sealed class FolderService : IFolderService
 
         // Apply home scope for caregivers
         if (!isAdmin && allowedHomeIds is not null)
-        {
             documentsQuery = documentsQuery.Where(d =>
                 d.Scope == DocumentScope.General ||
                 d.Scope == DocumentScope.Business ||
                 (d.HomeId != null && allowedHomeIds.Contains(d.HomeId.Value)) ||
-                (d.ClientId != null && _dbContext.Clients.Any(c => c.Id == d.ClientId && allowedHomeIds.Contains(c.HomeId))));
-        }
+                (d.ClientId != null &&
+                 _dbContext.Clients.Any(c => c.Id == d.ClientId && allowedHomeIds.Contains(c.HomeId))));
 
         var totalDocuments = await documentsQuery.CountAsync(cancellationToken);
         var totalPages = (int)Math.Ceiling(totalDocuments / (double)query.PageSize);
@@ -597,8 +496,41 @@ public sealed class FolderService : IFolderService
         };
     }
 
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<BreadcrumbItem>> GetBreadcrumbsAsync(
+        Guid folderId,
+        CancellationToken cancellationToken = default)
+    {
+        var breadcrumbs = new List<BreadcrumbItem>();
+        var currentId = folderId;
+
+        while (true)
+        {
+            var folder = await _dbContext.DocumentFolders
+                .AsNoTracking()
+                .FirstOrDefaultAsync(f => f.Id == currentId, cancellationToken);
+
+            if (folder is null) break;
+
+            breadcrumbs.Insert(0, new BreadcrumbItem
+            {
+                Id = folder.Id,
+                Name = folder.Name
+            });
+
+            if (folder.ParentFolderId is null) break;
+
+            currentId = folder.ParentFolderId.Value;
+        }
+
+        // Add root
+        breadcrumbs.Insert(0, new BreadcrumbItem { Id = null, Name = "Documents" });
+
+        return breadcrumbs;
+    }
+
     /// <summary>
-    /// Browse clients as virtual folders for Client scope.
+    ///     Browse clients as virtual folders for Client scope.
     /// </summary>
     private async Task<BrowseDocumentsResponse> BrowseClientsAsVirtualFoldersAsync(
         BrowseDocumentsQuery query,
@@ -614,16 +546,16 @@ public sealed class FolderService : IFolderService
 
         // Apply home scope for caregivers
         if (!isAdmin && allowedHomeIds is not null)
-        {
             clientsQuery = clientsQuery.Where(c => allowedHomeIds.Contains(c.HomeId));
-        }
 
-        var clients = await clientsQuery.OrderBy(c => c.LastName).ThenBy(c => c.FirstName).ToListAsync(cancellationToken);
+        var clients = await clientsQuery.OrderBy(c => c.LastName).ThenBy(c => c.FirstName)
+            .ToListAsync(cancellationToken);
 
         // Get document counts per client
         var clientIds = clients.Select(c => c.Id).ToList();
         var documentCounts = await _dbContext.Documents
-            .Where(d => d.IsActive && d.Scope == DocumentScope.Client && d.ClientId != null && clientIds.Contains(d.ClientId.Value))
+            .Where(d => d.IsActive && d.Scope == DocumentScope.Client && d.ClientId != null &&
+                        clientIds.Contains(d.ClientId.Value))
             .GroupBy(d => d.ClientId)
             .Select(g => new { ClientId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.ClientId!.Value, x => x.Count, cancellationToken);
@@ -661,7 +593,7 @@ public sealed class FolderService : IFolderService
     }
 
     /// <summary>
-    /// Browse homes as virtual folders for Home scope.
+    ///     Browse homes as virtual folders for Home scope.
     /// </summary>
     private async Task<BrowseDocumentsResponse> BrowseHomesAsVirtualFoldersAsync(
         BrowseDocumentsQuery query,
@@ -675,17 +607,15 @@ public sealed class FolderService : IFolderService
             .AsNoTracking();
 
         // Apply home scope for caregivers
-        if (!isAdmin && allowedHomeIds is not null)
-        {
-            homesQuery = homesQuery.Where(h => allowedHomeIds.Contains(h.Id));
-        }
+        if (!isAdmin && allowedHomeIds is not null) homesQuery = homesQuery.Where(h => allowedHomeIds.Contains(h.Id));
 
         var homes = await homesQuery.OrderBy(h => h.Name).ToListAsync(cancellationToken);
 
         // Get document counts per home
         var homeIds = homes.Select(h => h.Id).ToList();
         var documentCounts = await _dbContext.Documents
-            .Where(d => d.IsActive && d.Scope == DocumentScope.Home && d.HomeId != null && homeIds.Contains(d.HomeId.Value))
+            .Where(d => d.IsActive && d.Scope == DocumentScope.Home && d.HomeId != null &&
+                        homeIds.Contains(d.HomeId.Value))
             .GroupBy(d => d.HomeId)
             .Select(g => new { HomeId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.HomeId!.Value, x => x.Count, cancellationToken);
@@ -722,46 +652,8 @@ public sealed class FolderService : IFolderService
         };
     }
 
-    /// <inheritdoc />
-    public async Task<IReadOnlyList<BreadcrumbItem>> GetBreadcrumbsAsync(
-        Guid folderId,
-        CancellationToken cancellationToken = default)
-    {
-        var breadcrumbs = new List<BreadcrumbItem>();
-        var currentId = folderId;
-
-        while (true)
-        {
-            var folder = await _dbContext.DocumentFolders
-                .AsNoTracking()
-                .FirstOrDefaultAsync(f => f.Id == currentId, cancellationToken);
-
-            if (folder is null)
-            {
-                break;
-            }
-
-            breadcrumbs.Insert(0, new BreadcrumbItem
-            {
-                Id = folder.Id,
-                Name = folder.Name
-            });
-
-            if (folder.ParentFolderId is null)
-            {
-                break;
-            }
-
-            currentId = folder.ParentFolderId.Value;
-        }
-
-        // Add root
-        breadcrumbs.Insert(0, new BreadcrumbItem { Id = null, Name = "Documents" });
-
-        return breadcrumbs;
-    }
-
-    private async Task<bool> IsDescendantOfAsync(Guid folderId, Guid potentialParentId, CancellationToken cancellationToken)
+    private async Task<bool> IsDescendantOfAsync(Guid folderId, Guid potentialParentId,
+        CancellationToken cancellationToken)
     {
         var currentId = folderId;
 
@@ -771,15 +663,9 @@ public sealed class FolderService : IFolderService
                 .AsNoTracking()
                 .FirstOrDefaultAsync(f => f.Id == currentId, cancellationToken);
 
-            if (folder?.ParentFolderId is null)
-            {
-                return false;
-            }
+            if (folder?.ParentFolderId is null) return false;
 
-            if (folder.ParentFolderId == potentialParentId)
-            {
-                return true;
-            }
+            if (folder.ParentFolderId == potentialParentId) return true;
 
             currentId = folder.ParentFolderId.Value;
         }
@@ -800,7 +686,7 @@ public sealed class FolderService : IFolderService
     }
 
     /// <summary>
-    /// Build breadcrumbs based on scope and client/home context.
+    ///     Build breadcrumbs based on scope and client/home context.
     /// </summary>
     private async Task<IReadOnlyList<BreadcrumbItem>> BuildBreadcrumbsForContextAsync(
         DocumentScope? scope,
@@ -827,15 +713,13 @@ public sealed class FolderService : IFolderService
             var client = await _dbContext.Clients
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == clientId.Value, cancellationToken);
-            
+
             if (client is not null)
-            {
-                breadcrumbs.Add(new BreadcrumbItem 
-                { 
-                    Id = client.Id, 
-                    Name = $"{client.FirstName} {client.LastName}" 
+                breadcrumbs.Add(new BreadcrumbItem
+                {
+                    Id = client.Id,
+                    Name = $"{client.FirstName} {client.LastName}"
                 });
-            }
         }
 
         // Add home breadcrumb if home is selected
@@ -844,15 +728,13 @@ public sealed class FolderService : IFolderService
             var home = await _dbContext.Homes
                 .AsNoTracking()
                 .FirstOrDefaultAsync(h => h.Id == homeId.Value, cancellationToken);
-            
+
             if (home is not null)
-            {
-                breadcrumbs.Add(new BreadcrumbItem 
-                { 
-                    Id = home.Id, 
-                    Name = home.Name 
+                breadcrumbs.Add(new BreadcrumbItem
+                {
+                    Id = home.Id,
+                    Name = home.Name
                 });
-            }
         }
 
         return breadcrumbs;
@@ -899,7 +781,8 @@ public sealed class FolderService : IFolderService
         };
     }
 
-    private FolderDto MapToFolderDto(DocumentFolder folder, Guid userId, bool isAdmin, IReadOnlyList<BreadcrumbItem> breadcrumbs)
+    private FolderDto MapToFolderDto(DocumentFolder folder, Guid userId, bool isAdmin,
+        IReadOnlyList<BreadcrumbItem> breadcrumbs)
     {
         return new FolderDto
         {

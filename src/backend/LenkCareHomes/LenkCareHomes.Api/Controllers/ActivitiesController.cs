@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using LenkCareHomes.Api.Domain.Constants;
 using LenkCareHomes.Api.Models.CareLog;
 using LenkCareHomes.Api.Services.CareLog;
@@ -7,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LenkCareHomes.Api.Controllers;
 
 /// <summary>
-/// Controller for recreational and group activity operations.
+///     Controller for recreational and group activity operations.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -26,7 +27,7 @@ public sealed class ActivitiesController : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new activity (individual or group).
+    ///     Creates a new activity (individual or group).
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(ActivityOperationResponse), StatusCodes.Status201Created)]
@@ -36,18 +37,12 @@ public sealed class ActivitiesController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _activityService.CreateActivityAsync(
             request, currentUserId.Value, GetClientIpAddress(), cancellationToken);
 
-        if (!response.Success)
-        {
-            return BadRequest(response);
-        }
+        if (!response.Success) return BadRequest(response);
 
         return CreatedAtAction(
             nameof(GetActivityByIdAsync),
@@ -56,7 +51,7 @@ public sealed class ActivitiesController : ControllerBase
     }
 
     /// <summary>
-    /// Gets an activity by ID.
+    ///     Gets an activity by ID.
     /// </summary>
     [HttpGet("{id:guid}")]
     [ActionName(nameof(GetActivityByIdAsync))]
@@ -67,16 +62,13 @@ public sealed class ActivitiesController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var activity = await _activityService.GetActivityByIdAsync(id, cancellationToken);
-        if (activity is null)
-        {
-            return NotFound();
-        }
+        if (activity is null) return NotFound();
 
         return Ok(activity);
     }
 
     /// <summary>
-    /// Updates an activity (admin only).
+    ///     Updates an activity (admin only).
     /// </summary>
     [HttpPut("{id:guid}")]
     [Authorize(Roles = Roles.Admin)]
@@ -89,20 +81,14 @@ public sealed class ActivitiesController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _activityService.UpdateActivityAsync(
             id, request, currentUserId.Value, GetClientIpAddress(), cancellationToken);
 
         if (!response.Success)
         {
-            if (response.Error == "Activity not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Activity not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -110,7 +96,7 @@ public sealed class ActivitiesController : ControllerBase
     }
 
     /// <summary>
-    /// Deletes an activity (admin only).
+    ///     Deletes an activity (admin only).
     /// </summary>
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = Roles.Admin)]
@@ -121,20 +107,14 @@ public sealed class ActivitiesController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _activityService.DeleteActivityAsync(
             id, currentUserId.Value, GetClientIpAddress(), cancellationToken);
 
         if (!response.Success)
         {
-            if (response.Error == "Activity not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Activity not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -142,7 +122,7 @@ public sealed class ActivitiesController : ControllerBase
     }
 
     /// <summary>
-    /// Gets activities by home.
+    ///     Gets activities by home.
     /// </summary>
     [HttpGet("by-home/{homeId:guid}")]
     [ProducesResponseType(typeof(IReadOnlyList<ActivityDto>), StatusCodes.Status200OK)]
@@ -157,7 +137,7 @@ public sealed class ActivitiesController : ControllerBase
     }
 
     /// <summary>
-    /// Gets activities by client.
+    ///     Gets activities by client.
     /// </summary>
     [HttpGet("by-client/{clientId:guid}")]
     [ProducesResponseType(typeof(IReadOnlyList<ActivityDto>), StatusCodes.Status200OK)]
@@ -167,28 +147,23 @@ public sealed class ActivitiesController : ControllerBase
         [FromQuery] DateTime? toDate = null,
         CancellationToken cancellationToken = default)
     {
-        var activities = await _activityService.GetActivitiesByClientAsync(clientId, fromDate, toDate, cancellationToken);
+        var activities =
+            await _activityService.GetActivitiesByClientAsync(clientId, fromDate, toDate, cancellationToken);
         return Ok(activities);
     }
 
     private string? GetClientIpAddress()
     {
         var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-        if (!string.IsNullOrEmpty(forwardedFor))
-        {
-            return forwardedFor.Split(',').First().Trim();
-        }
+        if (!string.IsNullOrEmpty(forwardedFor)) return forwardedFor.Split(',').First().Trim();
 
         return HttpContext.Connection.RemoteIpAddress?.ToString();
     }
 
     private Guid? GetCurrentUserId()
     {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (Guid.TryParse(userIdClaim, out var userId))
-        {
-            return userId;
-        }
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(userIdClaim, out var userId)) return userId;
         return null;
     }
 }

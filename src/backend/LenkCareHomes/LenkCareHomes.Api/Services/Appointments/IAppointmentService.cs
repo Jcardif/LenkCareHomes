@@ -4,12 +4,12 @@ using LenkCareHomes.Api.Models.Appointments;
 namespace LenkCareHomes.Api.Services.Appointments;
 
 /// <summary>
-/// Service interface for appointment operations.
+///     Service interface for appointment operations.
 /// </summary>
 public interface IAppointmentService
 {
     /// <summary>
-    /// Creates a new appointment.
+    ///     Creates a new appointment.
     /// </summary>
     Task<AppointmentOperationResponse> CreateAppointmentAsync(
         CreateAppointmentRequest request,
@@ -18,8 +18,8 @@ public interface IAppointmentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets appointments with optional filters.
-    /// Caregivers only see appointments for clients in their assigned homes.
+    ///     Gets appointments with optional filters.
+    ///     Caregivers only see appointments for clients in their assigned homes.
     /// </summary>
     Task<PagedAppointmentResponse> GetAppointmentsAsync(
         Guid? clientId = null,
@@ -35,7 +35,7 @@ public interface IAppointmentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets an appointment by ID.
+    ///     Gets an appointment by ID.
     /// </summary>
     Task<AppointmentDto?> GetAppointmentByIdAsync(
         Guid appointmentId,
@@ -43,7 +43,7 @@ public interface IAppointmentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Updates an existing appointment.
+    ///     Updates an existing appointment.
     /// </summary>
     Task<AppointmentOperationResponse> UpdateAppointmentAsync(
         Guid appointmentId,
@@ -54,7 +54,7 @@ public interface IAppointmentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Marks an appointment as completed.
+    ///     Marks an appointment as completed.
     /// </summary>
     Task<AppointmentOperationResponse> CompleteAppointmentAsync(
         Guid appointmentId,
@@ -65,7 +65,7 @@ public interface IAppointmentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Cancels an appointment.
+    ///     Cancels an appointment.
     /// </summary>
     Task<AppointmentOperationResponse> CancelAppointmentAsync(
         Guid appointmentId,
@@ -76,7 +76,7 @@ public interface IAppointmentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Marks an appointment as no-show.
+    ///     Marks an appointment as no-show.
     /// </summary>
     Task<AppointmentOperationResponse> MarkNoShowAsync(
         Guid appointmentId,
@@ -87,7 +87,7 @@ public interface IAppointmentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Reschedules an appointment (marks current as Rescheduled).
+    ///     Reschedules an appointment (marks current as Rescheduled).
     /// </summary>
     Task<AppointmentOperationResponse> RescheduleAppointmentAsync(
         Guid appointmentId,
@@ -98,7 +98,7 @@ public interface IAppointmentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deletes an appointment (Admin only, only scheduled appointments).
+    ///     Deletes an appointment (Admin only, only scheduled appointments).
     /// </summary>
     Task<AppointmentOperationResponse> DeleteAppointmentAsync(
         Guid appointmentId,
@@ -107,7 +107,7 @@ public interface IAppointmentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets upcoming appointments for dashboard display.
+    ///     Gets upcoming appointments for dashboard display.
     /// </summary>
     Task<IReadOnlyList<UpcomingAppointmentDto>> GetUpcomingAppointmentsAsync(
         int days = 7,
@@ -116,7 +116,7 @@ public interface IAppointmentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets appointments for a specific client.
+    ///     Gets appointments for a specific client.
     /// </summary>
     Task<IReadOnlyList<AppointmentSummaryDto>> GetClientAppointmentsAsync(
         Guid clientId,

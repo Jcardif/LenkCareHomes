@@ -8,12 +8,12 @@ using Microsoft.EntityFrameworkCore;
 namespace LenkCareHomes.Api.Services.CareLog;
 
 /// <summary>
-/// Service implementation for ROM log operations.
+///     Service implementation for ROM log operations.
 /// </summary>
 public sealed class ROMLogService : IROMLogService
 {
-    private readonly ApplicationDbContext _dbContext;
     private readonly IAuditLogService _auditService;
+    private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<ROMLogService> _logger;
 
     public ROMLogService(
@@ -37,13 +37,11 @@ public sealed class ROMLogService : IROMLogService
         ArgumentNullException.ThrowIfNull(request);
 
         if (string.IsNullOrWhiteSpace(request.ActivityDescription))
-        {
             return new ROMLogOperationResponse
             {
                 Success = false,
                 Error = "Activity description is required."
             };
-        }
 
         // Verify client exists
         var client = await _dbContext.Clients
@@ -51,13 +49,11 @@ public sealed class ROMLogService : IROMLogService
             .FirstOrDefaultAsync(c => c.Id == clientId, cancellationToken);
 
         if (client is null)
-        {
             return new ROMLogOperationResponse
             {
                 Success = false,
                 Error = "Client not found."
             };
-        }
 
         var romLog = new ROMLog
         {
@@ -111,15 +107,9 @@ public sealed class ROMLogService : IROMLogService
             .Include(r => r.Caregiver)
             .Where(r => r.ClientId == clientId);
 
-        if (fromDate.HasValue)
-        {
-            query = query.Where(r => r.Timestamp >= fromDate.Value);
-        }
+        if (fromDate.HasValue) query = query.Where(r => r.Timestamp >= fromDate.Value);
 
-        if (toDate.HasValue)
-        {
-            query = query.Where(r => r.Timestamp <= toDate.Value);
-        }
+        if (toDate.HasValue) query = query.Where(r => r.Timestamp <= toDate.Value);
 
         var logs = await query
             .OrderByDescending(r => r.Timestamp)

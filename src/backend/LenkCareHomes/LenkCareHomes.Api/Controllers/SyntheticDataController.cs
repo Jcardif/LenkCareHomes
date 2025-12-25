@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text.Json;
 using LenkCareHomes.Api.Domain.Constants;
 using LenkCareHomes.Api.Middleware;
@@ -8,12 +9,12 @@ using Microsoft.AspNetCore.Mvc;
 namespace LenkCareHomes.Api.Controllers;
 
 /// <summary>
-/// Controller for synthetic data operations.
-/// Only available in development environment and restricted to Sysadmin role.
-/// This controller is protected by multiple layers:
-/// 1. DevelopmentOnly attribute - returns 404 in non-dev environments
-/// 2. Sysadmin role authorization
-/// 3. Service-level environment check
+///     Controller for synthetic data operations.
+///     Only available in development environment and restricted to Sysadmin role.
+///     This controller is protected by multiple layers:
+///     1. DevelopmentOnly attribute - returns 404 in non-dev environments
+///     2. Sysadmin role authorization
+///     3. Service-level environment check
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -21,8 +22,8 @@ namespace LenkCareHomes.Api.Controllers;
 [DevelopmentOnly]
 public sealed class SyntheticDataController : ControllerBase
 {
-    private readonly ISyntheticDataService _syntheticDataService;
     private readonly ILogger<SyntheticDataController> _logger;
+    private readonly ISyntheticDataService _syntheticDataService;
 
     public SyntheticDataController(
         ISyntheticDataService syntheticDataService,
@@ -33,7 +34,7 @@ public sealed class SyntheticDataController : ControllerBase
     }
 
     /// <summary>
-    /// Checks if synthetic data operations are available.
+    ///     Checks if synthetic data operations are available.
     /// </summary>
     /// <returns>Availability status.</returns>
     [HttpGet("available")]
@@ -50,7 +51,7 @@ public sealed class SyntheticDataController : ControllerBase
     }
 
     /// <summary>
-    /// Gets current database statistics.
+    ///     Gets current database statistics.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Database statistics.</returns>
@@ -60,18 +61,15 @@ public sealed class SyntheticDataController : ControllerBase
     public async Task<ActionResult<DataStatistics>> GetStatisticsAsync(
         CancellationToken cancellationToken = default)
     {
-        if (!_syntheticDataService.IsAvailable)
-        {
-            return Forbid();
-        }
+        if (!_syntheticDataService.IsAvailable) return Forbid();
 
         var stats = await _syntheticDataService.GetStatisticsAsync(cancellationToken);
         return Ok(stats);
     }
 
     /// <summary>
-    /// Loads synthetic data into the database.
-    /// Only available in development environment.
+    ///     Loads synthetic data into the database.
+    ///     Only available in development environment.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Load result.</returns>
@@ -83,19 +81,14 @@ public sealed class SyntheticDataController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         if (!_syntheticDataService.IsAvailable)
-        {
             return StatusCode(StatusCodes.Status403Forbidden, new LoadSyntheticDataResult
             {
                 Success = false,
                 Error = "Synthetic data operations are only available in development environment."
             });
-        }
 
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         _logger.LogInformation("User {UserId} initiated synthetic data load", currentUserId);
 
@@ -104,17 +97,14 @@ public sealed class SyntheticDataController : ControllerBase
             GetClientIpAddress(),
             cancellationToken);
 
-        if (!result.Success)
-        {
-            return BadRequest(result);
-        }
+        if (!result.Success) return BadRequest(result);
 
         return Ok(result);
     }
 
     /// <summary>
-    /// Loads synthetic data with real-time progress streaming via Server-Sent Events (SSE).
-    /// Only available in development environment.
+    ///     Loads synthetic data with real-time progress streaming via Server-Sent Events (SSE).
+    ///     Only available in development environment.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>SSE stream of progress updates, ending with the final result.</returns>
@@ -128,7 +118,9 @@ public sealed class SyntheticDataController : ControllerBase
 
         if (!_syntheticDataService.IsAvailable)
         {
-            await WriteSSEEventAsync("error", new { error = "Synthetic data operations are only available in development environment." }, cancellationToken);
+            await WriteSSEEventAsync("error",
+                new { error = "Synthetic data operations are only available in development environment." },
+                cancellationToken);
             return;
         }
 
@@ -147,9 +139,7 @@ public sealed class SyntheticDataController : ControllerBase
             async progress =>
             {
                 if (!cancellationToken.IsCancellationRequested)
-                {
                     await WriteSSEEventAsync("progress", progress, cancellationToken);
-                }
             },
             cancellationToken);
 
@@ -163,16 +153,16 @@ public sealed class SyntheticDataController : ControllerBase
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         });
-        
+
         await Response.WriteAsync($"event: {eventType}\n", cancellationToken);
         await Response.WriteAsync($"data: {json}\n\n", cancellationToken);
         await Response.Body.FlushAsync(cancellationToken);
     }
 
     /// <summary>
-    /// Clears all non-system data from the database.
-    /// Only available in development environment.
-    /// USE WITH EXTREME CAUTION - this is destructive!
+    ///     Clears all non-system data from the database.
+    ///     Only available in development environment.
+    ///     USE WITH EXTREME CAUTION - this is destructive!
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Clear result.</returns>
@@ -184,19 +174,14 @@ public sealed class SyntheticDataController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         if (!_syntheticDataService.IsAvailable)
-        {
             return StatusCode(StatusCodes.Status403Forbidden, new ClearDataResult
             {
                 Success = false,
                 Error = "Synthetic data operations are only available in development environment."
             });
-        }
 
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         _logger.LogWarning("User {UserId} initiated data clear operation", currentUserId);
 
@@ -205,17 +190,14 @@ public sealed class SyntheticDataController : ControllerBase
             GetClientIpAddress(),
             cancellationToken);
 
-        if (!result.Success)
-        {
-            return BadRequest(result);
-        }
+        if (!result.Success) return BadRequest(result);
 
         return Ok(result);
     }
 
     /// <summary>
-    /// Clears all data with real-time progress streaming via Server-Sent Events (SSE).
-    /// Only available in development environment.
+    ///     Clears all data with real-time progress streaming via Server-Sent Events (SSE).
+    ///     Only available in development environment.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>SSE stream of progress updates, ending with the final result.</returns>
@@ -229,7 +211,9 @@ public sealed class SyntheticDataController : ControllerBase
 
         if (!_syntheticDataService.IsAvailable)
         {
-            await WriteSSEEventAsync("error", new { error = "Synthetic data operations are only available in development environment." }, cancellationToken);
+            await WriteSSEEventAsync("error",
+                new { error = "Synthetic data operations are only available in development environment." },
+                cancellationToken);
             return;
         }
 
@@ -248,9 +232,7 @@ public sealed class SyntheticDataController : ControllerBase
             async progress =>
             {
                 if (!cancellationToken.IsCancellationRequested)
-                {
                     await WriteSSEEventAsync("progress", progress, cancellationToken);
-                }
             },
             cancellationToken);
 
@@ -261,27 +243,21 @@ public sealed class SyntheticDataController : ControllerBase
     private string? GetClientIpAddress()
     {
         var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-        if (!string.IsNullOrEmpty(forwardedFor))
-        {
-            return forwardedFor.Split(',').First().Trim();
-        }
+        if (!string.IsNullOrEmpty(forwardedFor)) return forwardedFor.Split(',').First().Trim();
 
         return HttpContext.Connection.RemoteIpAddress?.ToString();
     }
 
     private Guid? GetCurrentUserId()
     {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (Guid.TryParse(userIdClaim, out var userId))
-        {
-            return userId;
-        }
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(userIdClaim, out var userId)) return userId;
         return null;
     }
 }
 
 /// <summary>
-/// Response for synthetic data availability check.
+///     Response for synthetic data availability check.
 /// </summary>
 public sealed record SyntheticDataAvailabilityResponse
 {

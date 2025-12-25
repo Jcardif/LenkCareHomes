@@ -1,3 +1,4 @@
+using System.Text;
 using LenkCareHomes.Api.Data;
 using LenkCareHomes.Api.Domain.Constants;
 using LenkCareHomes.Api.Domain.Entities;
@@ -5,24 +6,21 @@ using LenkCareHomes.Api.Domain.Enums;
 using LenkCareHomes.Api.Models.Incidents;
 using LenkCareHomes.Api.Services.Audit;
 using LenkCareHomes.Api.Services.Documents;
-using LenkCareHomes.Api.Services.Email;
 using Microsoft.EntityFrameworkCore;
+using QuestPDF;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using Document = QuestPDF.Fluent.Document;
 
 namespace LenkCareHomes.Api.Services.Incidents;
 
 /// <summary>
-/// Service for incident reporting operations.
+///     Service for incident reporting operations.
 /// </summary>
 public sealed class IncidentService : IIncidentService
 {
-    private readonly ApplicationDbContext _dbContext;
-    private readonly IAuditLogService _auditLogService;
-    private readonly IIncidentNotificationService _notificationService;
-    private readonly IBlobStorageService _blobStorageService;
-    private readonly ILogger<IncidentService> _logger;
+    private const long MaxPhotoSizeBytes = 10 * 1024 * 1024; // 10MB
 
     private static readonly string[] AllowedImageTypes =
     [
@@ -34,7 +32,11 @@ public sealed class IncidentService : IIncidentService
         "image/heif"
     ];
 
-    private const long MaxPhotoSizeBytes = 10 * 1024 * 1024; // 10MB
+    private readonly IAuditLogService _auditLogService;
+    private readonly IBlobStorageService _blobStorageService;
+    private readonly ApplicationDbContext _dbContext;
+    private readonly ILogger<IncidentService> _logger;
+    private readonly IIncidentNotificationService _notificationService;
 
     public IncidentService(
         ApplicationDbContext dbContext,
@@ -60,21 +62,14 @@ public sealed class IncidentService : IIncidentService
         ArgumentNullException.ThrowIfNull(request);
 
         // Validate request
-        if (string.IsNullOrWhiteSpace(request.Location))
-        {
-            return IncidentOperationResponse.Fail("Location is required.");
-        }
+        if (string.IsNullOrWhiteSpace(request.Location)) return IncidentOperationResponse.Fail("Location is required.");
 
         if (string.IsNullOrWhiteSpace(request.Description))
-        {
             return IncidentOperationResponse.Fail("Description is required.");
-        }
 
         // Validate severity is between 1-5
         if (request.Severity < 1 || request.Severity > 5)
-        {
             return IncidentOperationResponse.Fail("Severity must be between 1 and 5.");
-        }
 
         // Verify client exists if ClientId is provided
         Client? client = null;
@@ -84,20 +79,14 @@ public sealed class IncidentService : IIncidentService
                 .Include(c => c.Home)
                 .FirstOrDefaultAsync(c => c.Id == request.ClientId.Value && c.IsActive, cancellationToken);
 
-            if (client is null)
-            {
-                return IncidentOperationResponse.Fail("Client not found or inactive.");
-            }
+            if (client is null) return IncidentOperationResponse.Fail("Client not found or inactive.");
         }
 
         // Verify home exists
         var home = await _dbContext.Homes
             .FirstOrDefaultAsync(h => h.Id == request.HomeId && h.IsActive, cancellationToken);
 
-        if (home is null)
-        {
-            return IncidentOperationResponse.Fail("Home not found or inactive.");
-        }
+        if (home is null) return IncidentOperationResponse.Fail("Home not found or inactive.");
 
         // Generate incident number with checksum (e.g., IR000004Q)
         var incidentNumber = await GenerateIncidentNumberAsync(home, request.IncidentType, cancellationToken);
@@ -190,40 +179,19 @@ public sealed class IncidentService : IIncidentService
         query = query.Where(i => i.Status != IncidentStatus.Draft || i.ReportedById == currentUserId);
 
         // Apply home scope for caregivers
-        if (allowedHomeIds is not null)
-        {
-            query = query.Where(i => allowedHomeIds.Contains(i.HomeId));
-        }
+        if (allowedHomeIds is not null) query = query.Where(i => allowedHomeIds.Contains(i.HomeId));
 
-        if (homeId.HasValue)
-        {
-            query = query.Where(i => i.HomeId == homeId.Value);
-        }
+        if (homeId.HasValue) query = query.Where(i => i.HomeId == homeId.Value);
 
-        if (status.HasValue)
-        {
-            query = query.Where(i => i.Status == status.Value);
-        }
+        if (status.HasValue) query = query.Where(i => i.Status == status.Value);
 
-        if (startDate.HasValue)
-        {
-            query = query.Where(i => i.OccurredAt >= startDate.Value);
-        }
+        if (startDate.HasValue) query = query.Where(i => i.OccurredAt >= startDate.Value);
 
-        if (endDate.HasValue)
-        {
-            query = query.Where(i => i.OccurredAt <= endDate.Value);
-        }
+        if (endDate.HasValue) query = query.Where(i => i.OccurredAt <= endDate.Value);
 
-        if (incidentType.HasValue)
-        {
-            query = query.Where(i => i.IncidentType == incidentType.Value);
-        }
+        if (incidentType.HasValue) query = query.Where(i => i.IncidentType == incidentType.Value);
 
-        if (clientId.HasValue)
-        {
-            query = query.Where(i => i.ClientId == clientId.Value);
-        }
+        if (clientId.HasValue) query = query.Where(i => i.ClientId == clientId.Value);
 
         // Get total count before pagination
         var totalCount = await query.CountAsync(cancellationToken);
@@ -237,9 +205,11 @@ public sealed class IncidentService : IIncidentService
                 Id = i.Id,
                 IncidentNumber = i.IncidentNumber,
                 ClientId = i.ClientId,
-                ClientName = i.Client != null 
-                    ? $"{i.Client.FirstName} {i.Client.LastName}" 
-                    : (i.ClientId.HasValue ? "Unknown" : "Home-level Incident"),
+                ClientName = i.Client != null
+                    ? $"{i.Client.FirstName} {i.Client.LastName}"
+                    : i.ClientId.HasValue
+                        ? "Unknown"
+                        : "Home-level Incident",
                 HomeId = i.HomeId,
                 HomeName = i.Home != null ? i.Home.Name : "Unknown",
                 IncidentType = i.IncidentType,
@@ -268,29 +238,20 @@ public sealed class IncidentService : IIncidentService
             .Include(i => i.ReportedBy)
             .Include(i => i.ClosedBy)
             .Include(i => i.FollowUps)
-                .ThenInclude(f => f.CreatedBy)
+            .ThenInclude(f => f.CreatedBy)
             .Include(i => i.Photos)
-                .ThenInclude(p => p.CreatedBy)
+            .ThenInclude(p => p.CreatedBy)
             .AsNoTracking();
 
         // Apply home scope for caregivers
-        if (allowedHomeIds is not null)
-        {
-            query = query.Where(i => allowedHomeIds.Contains(i.HomeId));
-        }
+        if (allowedHomeIds is not null) query = query.Where(i => allowedHomeIds.Contains(i.HomeId));
 
         var incident = await query.FirstOrDefaultAsync(i => i.Id == incidentId, cancellationToken);
 
-        if (incident is null)
-        {
-            return null;
-        }
+        if (incident is null) return null;
 
         // Drafts are only visible to the author - even admins cannot see other users' drafts
-        if (incident.Status == IncidentStatus.Draft && incident.ReportedById != currentUserId)
-        {
-            return null;
-        }
+        if (incident.Status == IncidentStatus.Draft && incident.ReportedById != currentUserId) return null;
 
         return MapToDto(incident);
     }
@@ -310,67 +271,37 @@ public sealed class IncidentService : IIncidentService
             .Include(i => i.Home)
             .FirstOrDefaultAsync(i => i.Id == incidentId, cancellationToken);
 
-        if (incident is null)
-        {
-            return IncidentOperationResponse.Fail("Incident not found.");
-        }
+        if (incident is null) return IncidentOperationResponse.Fail("Incident not found.");
 
         // Only the creator can edit their own draft
         if (incident.ReportedById != currentUserId)
-        {
             return IncidentOperationResponse.Fail("You can only edit your own incidents.");
-        }
 
         // Can only edit drafts
         if (incident.Status != IncidentStatus.Draft)
-        {
             return IncidentOperationResponse.Fail("Only draft incidents can be edited.");
-        }
 
         // Update fields if provided
-        if (request.IncidentType.HasValue)
-        {
-            incident.IncidentType = request.IncidentType.Value;
-        }
+        if (request.IncidentType.HasValue) incident.IncidentType = request.IncidentType.Value;
 
         if (request.Severity.HasValue)
         {
             if (request.Severity < 1 || request.Severity > 5)
-            {
                 return IncidentOperationResponse.Fail("Severity must be between 1 and 5.");
-            }
             incident.Severity = request.Severity.Value;
         }
 
-        if (request.OccurredAt.HasValue)
-        {
-            incident.OccurredAt = request.OccurredAt.Value;
-        }
+        if (request.OccurredAt.HasValue) incident.OccurredAt = request.OccurredAt.Value;
 
-        if (!string.IsNullOrWhiteSpace(request.Location))
-        {
-            incident.Location = request.Location;
-        }
+        if (!string.IsNullOrWhiteSpace(request.Location)) incident.Location = request.Location;
 
-        if (!string.IsNullOrWhiteSpace(request.Description))
-        {
-            incident.Description = request.Description;
-        }
+        if (!string.IsNullOrWhiteSpace(request.Description)) incident.Description = request.Description;
 
-        if (request.ActionsTaken is not null)
-        {
-            incident.ActionsTaken = request.ActionsTaken;
-        }
+        if (request.ActionsTaken is not null) incident.ActionsTaken = request.ActionsTaken;
 
-        if (request.WitnessNames is not null)
-        {
-            incident.WitnessNames = request.WitnessNames;
-        }
+        if (request.WitnessNames is not null) incident.WitnessNames = request.WitnessNames;
 
-        if (request.NotifiedParties is not null)
-        {
-            incident.NotifiedParties = request.NotifiedParties;
-        }
+        if (request.NotifiedParties is not null) incident.NotifiedParties = request.NotifiedParties;
 
         incident.UpdatedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -407,22 +338,15 @@ public sealed class IncidentService : IIncidentService
             .Include(i => i.Home)
             .FirstOrDefaultAsync(i => i.Id == incidentId, cancellationToken);
 
-        if (incident is null)
-        {
-            return IncidentOperationResponse.Fail("Incident not found.");
-        }
+        if (incident is null) return IncidentOperationResponse.Fail("Incident not found.");
 
         // Only the creator can submit their own draft
         if (incident.ReportedById != currentUserId)
-        {
             return IncidentOperationResponse.Fail("You can only submit your own incidents.");
-        }
 
         // Can only submit drafts
         if (incident.Status != IncidentStatus.Draft)
-        {
             return IncidentOperationResponse.Fail("Only draft incidents can be submitted.");
-        }
 
         incident.Status = IncidentStatus.Submitted;
         incident.UpdatedAt = DateTime.UtcNow;
@@ -476,10 +400,7 @@ public sealed class IncidentService : IIncidentService
             .Include(i => i.Home)
             .FirstOrDefaultAsync(i => i.Id == incidentId, cancellationToken);
 
-        if (incident is null)
-        {
-            return IncidentOperationResponse.Fail("Incident not found.");
-        }
+        if (incident is null) return IncidentOperationResponse.Fail("Incident not found.");
 
         var oldStatus = incident.Status;
         incident.Status = request.NewStatus;
@@ -490,11 +411,8 @@ public sealed class IncidentService : IIncidentService
         {
             incident.ClosedById = closedById;
             incident.ClosedAt = DateTime.UtcNow;
-            
-            if (!string.IsNullOrWhiteSpace(request.ClosureNotes))
-            {
-                incident.ClosureNotes = request.ClosureNotes;
-            }
+
+            if (!string.IsNullOrWhiteSpace(request.ClosureNotes)) incident.ClosureNotes = request.ClosureNotes;
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -530,17 +448,12 @@ public sealed class IncidentService : IIncidentService
         ArgumentNullException.ThrowIfNull(request);
 
         if (string.IsNullOrWhiteSpace(request.Note))
-        {
             return IncidentOperationResponse.Fail("Follow-up note is required.");
-        }
 
         var incident = await _dbContext.Incidents
             .FirstOrDefaultAsync(i => i.Id == incidentId, cancellationToken);
 
-        if (incident is null)
-        {
-            return IncidentOperationResponse.Fail("Incident not found.");
-        }
+        if (incident is null) return IncidentOperationResponse.Fail("Incident not found.");
 
         var followUp = new IncidentFollowUp
         {
@@ -585,25 +498,18 @@ public sealed class IncidentService : IIncidentService
         var incident = await _dbContext.Incidents
             .FirstOrDefaultAsync(i => i.Id == incidentId, cancellationToken);
 
-        if (incident is null)
-        {
-            return IncidentOperationResponse.Fail("Incident not found.");
-        }
+        if (incident is null) return IncidentOperationResponse.Fail("Incident not found.");
 
         // Only the creator can delete their own draft
         if (incident.ReportedById != currentUserId)
-        {
             return IncidentOperationResponse.Fail("You can only delete your own incidents.");
-        }
 
         // Can only delete drafts
         if (incident.Status != IncidentStatus.Draft)
-        {
             return IncidentOperationResponse.Fail("Only draft incidents can be deleted.");
-        }
 
         var incidentNumber = incident.IncidentNumber;
-        
+
         _dbContext.Incidents.Remove(incident);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -651,26 +557,19 @@ public sealed class IncidentService : IIncidentService
 
         // Validate file type
         if (!AllowedImageTypes.Contains(request.ContentType, StringComparer.OrdinalIgnoreCase))
-        {
             return IncidentPhotoUploadResponse.Fail(
                 $"Invalid file type. Allowed types: {string.Join(", ", AllowedImageTypes)}");
-        }
 
         // Validate file size
         if (request.FileSizeBytes > MaxPhotoSizeBytes)
-        {
             return IncidentPhotoUploadResponse.Fail(
                 $"File too large. Maximum size is {MaxPhotoSizeBytes / (1024 * 1024)}MB.");
-        }
 
         // Verify incident exists
         var incident = await _dbContext.Incidents
             .FirstOrDefaultAsync(i => i.Id == incidentId, cancellationToken);
 
-        if (incident is null)
-        {
-            return IncidentPhotoUploadResponse.Fail("Incident not found.");
-        }
+        if (incident is null) return IncidentPhotoUploadResponse.Fail("Incident not found.");
 
         // Get current photo count for display order
         var photoCount = await _dbContext.IncidentPhotos
@@ -727,10 +626,7 @@ public sealed class IncidentService : IIncidentService
             .Include(p => p.Incident)
             .FirstOrDefaultAsync(p => p.Id == photoId, cancellationToken);
 
-        if (photo is null)
-        {
-            return IncidentPhotoOperationResponse.Fail("Photo not found.");
-        }
+        if (photo is null) return IncidentPhotoOperationResponse.Fail("Photo not found.");
 
         // Verify blob exists
         var blobExists = await _blobStorageService.BlobExistsAsync(photo.BlobPath, BlobContainers.IncidentPhotos);
@@ -794,31 +690,22 @@ public sealed class IncidentService : IIncidentService
             .Include(p => p.Incident)
             .FirstOrDefaultAsync(p => p.Id == photoId, cancellationToken);
 
-        if (photo is null)
-        {
-            return IncidentPhotoViewResponse.Fail("Photo not found.");
-        }
+        if (photo is null) return IncidentPhotoViewResponse.Fail("Photo not found.");
 
         // Check access to incident
         var incident = photo.Incident;
-        if (incident is null)
-        {
-            return IncidentPhotoViewResponse.Fail("Incident not found.");
-        }
+        if (incident is null) return IncidentPhotoViewResponse.Fail("Incident not found.");
 
         // Verify home access for caregivers
         if (!isAdmin && allowedHomeIds is not null && !allowedHomeIds.Contains(incident.HomeId))
-        {
             return IncidentPhotoViewResponse.Fail("Access denied.");
-        }
 
         // Draft incidents are only visible to the creator
         if (incident.Status == IncidentStatus.Draft && incident.ReportedById != currentUserId && !isAdmin)
-        {
             return IncidentPhotoViewResponse.Fail("Access denied.");
-        }
 
-        var (url, expiresAt) = await _blobStorageService.GetReadSasUrlAsync(photo.BlobPath, 30, BlobContainers.IncidentPhotos);
+        var (url, expiresAt) =
+            await _blobStorageService.GetReadSasUrlAsync(photo.BlobPath, 30, BlobContainers.IncidentPhotos);
 
         return IncidentPhotoViewResponse.Ok(url, expiresAt);
     }
@@ -836,28 +723,18 @@ public sealed class IncidentService : IIncidentService
             .Include(p => p.CreatedBy)
             .FirstOrDefaultAsync(p => p.Id == photoId, cancellationToken);
 
-        if (photo is null)
-        {
-            return IncidentPhotoOperationResponse.Fail("Photo not found.");
-        }
+        if (photo is null) return IncidentPhotoOperationResponse.Fail("Photo not found.");
 
         var incident = photo.Incident;
-        if (incident is null)
-        {
-            return IncidentPhotoOperationResponse.Fail("Incident not found.");
-        }
+        if (incident is null) return IncidentPhotoOperationResponse.Fail("Incident not found.");
 
         // Only author or admin can delete photos
         if (!isAdmin && incident.ReportedById != currentUserId)
-        {
             return IncidentPhotoOperationResponse.Fail("Only the incident author or admin can delete photos.");
-        }
 
         // Only allow deletion if incident is still in draft
         if (incident.Status != IncidentStatus.Draft && !isAdmin)
-        {
             return IncidentPhotoOperationResponse.Fail("Photos can only be deleted from draft incidents.");
-        }
 
         // Delete blob from incident-photos container
         await _blobStorageService.DeleteBlobAsync(photo.BlobPath, BlobContainers.IncidentPhotos);
@@ -872,10 +749,7 @@ public sealed class IncidentService : IIncidentService
             .OrderBy(p => p.DisplayOrder)
             .ToListAsync(cancellationToken);
 
-        for (int i = 0; i < remainingPhotos.Count; i++)
-        {
-            remainingPhotos[i].DisplayOrder = i;
-        }
+        for (var i = 0; i < remainingPhotos.Count; i++) remainingPhotos[i].DisplayOrder = i;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         // Get user for audit
@@ -917,26 +791,19 @@ public sealed class IncidentService : IIncidentService
             .Include(i => i.ReportedBy)
             .Include(i => i.ClosedBy)
             .Include(i => i.FollowUps)
-                .ThenInclude(f => f.CreatedBy)
+            .ThenInclude(f => f.CreatedBy)
             .Include(i => i.Photos)
-                .ThenInclude(p => p.CreatedBy)
+            .ThenInclude(p => p.CreatedBy)
             .FirstOrDefaultAsync(i => i.Id == incidentId, cancellationToken);
 
-        if (incident is null)
-        {
-            throw new InvalidOperationException("Incident not found.");
-        }
+        if (incident is null) throw new InvalidOperationException("Incident not found.");
 
         // Verify access
         if (!isAdmin && allowedHomeIds is not null && !allowedHomeIds.Contains(incident.HomeId))
-        {
             throw new UnauthorizedAccessException("Access denied.");
-        }
 
         if (incident.Status == IncidentStatus.Draft && incident.ReportedById != currentUserId && !isAdmin)
-        {
             throw new UnauthorizedAccessException("Access denied.");
-        }
 
         // Generate PDF using QuestPDF
         var pdf = await GenerateIncidentPdfAsync(incident, cancellationToken);
@@ -962,7 +829,7 @@ public sealed class IncidentService : IIncidentService
     private async Task<byte[]> GenerateIncidentPdfAsync(Incident incident, CancellationToken cancellationToken)
     {
         // Configure QuestPDF license
-        QuestPDF.Settings.License = LicenseType.Community;
+        Settings.License = LicenseType.Community;
 
         // Colors matching the application theme
         const string PrimaryColor = "#2d3732";
@@ -974,11 +841,10 @@ public sealed class IncidentService : IIncidentService
         // Pre-fetch photo images from blob storage
         var photoImages = new List<(IncidentPhoto Photo, byte[]? ImageData)>();
         foreach (var photo in incident.Photos.OrderBy(p => p.DisplayOrder))
-        {
             try
             {
                 var imageBytes = await _blobStorageService.DownloadBlobAsync(
-                    photo.BlobPath, 
+                    photo.BlobPath,
                     BlobContainers.IncidentPhotos,
                     cancellationToken);
                 photoImages.Add((photo, imageBytes));
@@ -988,9 +854,8 @@ public sealed class IncidentService : IIncidentService
                 _logger.LogWarning(ex, "Failed to download photo {PhotoId} for PDF export", photo.Id);
                 photoImages.Add((photo, null));
             }
-        }
 
-        var document = QuestPDF.Fluent.Document.Create(container =>
+        var document = Document.Create(container =>
         {
             container.Page(page =>
             {
@@ -1030,7 +895,8 @@ public sealed class IncidentService : IIncidentService
                             row.RelativeItem().Column(col =>
                             {
                                 col.Item().Text($"Type: {incident.IncidentType}").SemiBold();
-                                col.Item().Text($"Severity: {incident.Severity}/5 ({GetSeverityLabel(incident.Severity)})");
+                                col.Item().Text(
+                                    $"Severity: {incident.Severity}/5 ({GetSeverityLabel(incident.Severity)})");
                                 col.Item().Text($"Status: {incident.Status}");
                             });
                             row.RelativeItem().Column(col =>
@@ -1050,12 +916,14 @@ public sealed class IncidentService : IIncidentService
                         {
                             row.RelativeItem().Column(col =>
                             {
-                                col.Item().Text($"Client: {(incident.Client is not null ? $"{incident.Client.FirstName} {incident.Client.LastName}" : "N/A (Home-level incident)")}");
+                                col.Item().Text(
+                                    $"Client: {(incident.Client is not null ? $"{incident.Client.FirstName} {incident.Client.LastName}" : "N/A (Home-level incident)")}");
                                 col.Item().Text($"Home: {incident.Home?.Name}");
                             });
                             row.RelativeItem().Column(col =>
                             {
-                                col.Item().Text($"Reported By: {incident.ReportedBy?.FirstName} {incident.ReportedBy?.LastName}");
+                                col.Item().Text(
+                                    $"Reported By: {incident.ReportedBy?.FirstName} {incident.ReportedBy?.LastName}");
                             });
                         });
                     });
@@ -1070,84 +938,75 @@ public sealed class IncidentService : IIncidentService
 
                     // Actions Taken Section
                     if (!string.IsNullOrWhiteSpace(incident.ActionsTaken))
-                    {
                         column.Item().Column(actionCol =>
                         {
                             actionCol.Item().Background(AccentColor).Padding(8).Text("Actions Taken")
                                 .FontSize(11).Bold().FontColor(Colors.White);
                             actionCol.Item().Border(1).BorderColor(BorderColor).Padding(10).Text(incident.ActionsTaken);
                         });
-                    }
 
                     // Photos Section
                     if (photoImages.Count > 0)
-                    {
                         column.Item().Column(photoCol =>
                         {
                             photoCol.Item().Background(AccentColor).Padding(8).Text($"Photos ({photoImages.Count})")
                                 .FontSize(11).Bold().FontColor(Colors.White);
-                            
+
                             photoCol.Item().Border(1).BorderColor(BorderColor).Padding(10).Column(imgCol =>
                             {
                                 foreach (var (photo, imageData) in photoImages)
-                                {
                                     imgCol.Item().PaddingBottom(10).Column(singlePhotoCol =>
                                     {
                                         if (imageData is not null)
-                                        {
-                                            singlePhotoCol.Item().AlignCenter().MaxWidth(400).Image(imageData).FitWidth();
-                                        }
+                                            singlePhotoCol.Item().AlignCenter().MaxWidth(400).Image(imageData)
+                                                .FitWidth();
                                         else
-                                        {
-                                            singlePhotoCol.Item().AlignCenter().Text($"[Image not available: {photo.FileName}]")
+                                            singlePhotoCol.Item().AlignCenter()
+                                                .Text($"[Image not available: {photo.FileName}]")
                                                 .FontColor(Colors.Grey.Medium);
-                                        }
                                         if (!string.IsNullOrWhiteSpace(photo.Caption))
-                                        {
                                             singlePhotoCol.Item().AlignCenter().PaddingTop(5).Text(photo.Caption)
                                                 .FontSize(9).Italic();
-                                        }
-                                        singlePhotoCol.Item().AlignCenter().Text(photo.FileName).FontSize(8).FontColor(Colors.Grey.Darken1);
+                                        singlePhotoCol.Item().AlignCenter().Text(photo.FileName).FontSize(8)
+                                            .FontColor(Colors.Grey.Darken1);
                                     });
-                                }
                             });
                         });
-                    }
 
                     // Follow-ups Section
                     if (incident.FollowUps.Count > 0)
-                    {
                         column.Item().Column(followUpCol =>
                         {
-                            followUpCol.Item().Background(AccentColor).Padding(8).Text($"Follow-up Notes ({incident.FollowUps.Count})")
+                            followUpCol.Item().Background(AccentColor).Padding(8)
+                                .Text($"Follow-up Notes ({incident.FollowUps.Count})")
                                 .FontSize(11).Bold().FontColor(Colors.White);
-                            
+
                             followUpCol.Item().Border(1).BorderColor(BorderColor).Padding(10).Column(notesCol =>
                             {
                                 foreach (var followUp in incident.FollowUps.OrderBy(f => f.CreatedAt))
-                                {
                                     notesCol.Item().PaddingBottom(8).Column(noteCol =>
                                     {
-                                        noteCol.Item().Text($"{followUp.CreatedAt:MMM dd, yyyy HH:mm} - {followUp.CreatedBy?.FirstName} {followUp.CreatedBy?.LastName}")
+                                        noteCol.Item()
+                                            .Text(
+                                                $"{followUp.CreatedAt:MMM dd, yyyy HH:mm} - {followUp.CreatedBy?.FirstName} {followUp.CreatedBy?.LastName}")
                                             .SemiBold().FontSize(9);
                                         noteCol.Item().PaddingTop(2).Text(followUp.Note);
                                     });
-                                }
                             });
                         });
-                    }
 
                     // Closure Section
                     if (incident.Status == IncidentStatus.Closed)
-                    {
                         column.Item().Column(closeCol =>
                         {
                             closeCol.Item().Background(AccentColor).Padding(8).Text("Closure Information")
                                 .FontSize(11).Bold().FontColor(Colors.White);
-                            
+
                             closeCol.Item().Border(1).BorderColor(BorderColor).Padding(10).Column(closureCol =>
                             {
-                                closureCol.Item().Text($"Closed By: {incident.ClosedBy?.FirstName} {incident.ClosedBy?.LastName}").SemiBold();
+                                closureCol.Item()
+                                    .Text($"Closed By: {incident.ClosedBy?.FirstName} {incident.ClosedBy?.LastName}")
+                                    .SemiBold();
                                 closureCol.Item().Text($"Closed At: {incident.ClosedAt:MMM dd, yyyy HH:mm}");
                                 if (!string.IsNullOrWhiteSpace(incident.ClosureNotes))
                                 {
@@ -1156,7 +1015,6 @@ public sealed class IncidentService : IIncidentService
                                 }
                             });
                         });
-                    }
                 });
 
                 // Footer
@@ -1216,14 +1074,14 @@ public sealed class IncidentService : IIncidentService
     }
 
     /// <summary>
-    /// Generates a professional incident reference number using checksum.
-    /// Format: {T}IR{HH}{NNNN}{C} where:
-    ///   T  = Incident type prefix (F=Fall, M=Medication, B=Behavioral, X=Medical, I=Injury, E=Elopement, O=Other)
-    ///   IR = Incident Report identifier
-    ///   HH = Home code (2 chars, base-36 encoded from home sequence)
-    ///   NNNN = 4-digit sequence for this home (base-36)
-    ///   C = Checksum character (Luhn mod 36)
-    /// Example: FIR010005K = Fall Incident Report, Home #1, incident #5, checksum K
+    ///     Generates a professional incident reference number using checksum.
+    ///     Format: {T}IR{HH}{NNNN}{C} where:
+    ///     T  = Incident type prefix (F=Fall, M=Medication, B=Behavioral, X=Medical, I=Injury, E=Elopement, O=Other)
+    ///     IR = Incident Report identifier
+    ///     HH = Home code (2 chars, base-36 encoded from home sequence)
+    ///     NNNN = 4-digit sequence for this home (base-36)
+    ///     C = Checksum character (Luhn mod 36)
+    ///     Example: FIR010005K = Fall Incident Report, Home #1, incident #5, checksum K
     /// </summary>
     private async Task<string> GenerateIncidentNumberAsync(
         Home home,
@@ -1245,16 +1103,16 @@ public sealed class IncidentService : IIncidentService
 
         // Build payload: HomeCode + Sequence (type is prefix, not in checksum payload)
         var payload = $"{homeCode}{sequence}";
-        
+
         // Calculate Luhn mod 36 checksum over full reference (type + IR + payload)
         var fullPayload = $"{typeCode}IR{payload}";
         var checksum = CalculateLuhnMod36Checksum(fullPayload);
-        
+
         return $"{typeCode}IR{payload}{checksum}";
     }
 
     /// <summary>
-    /// Gets the sequence number for a home based on creation order.
+    ///     Gets the sequence number for a home based on creation order.
     /// </summary>
     private async Task<int> GetHomeSequenceAsync(Guid homeId, CancellationToken cancellationToken)
     {
@@ -1268,40 +1126,44 @@ public sealed class IncidentService : IIncidentService
     }
 
     /// <summary>
-    /// Gets a single character code for incident type.
+    ///     Gets a single character code for incident type.
     /// </summary>
-    private static char GetIncidentTypeCode(IncidentType type) => type switch
+    private static char GetIncidentTypeCode(IncidentType type)
     {
-        IncidentType.Fall => 'F',
-        IncidentType.Medication => 'M',
-        IncidentType.Behavioral => 'B',
-        IncidentType.Medical => 'X',
-        IncidentType.Injury => 'I',
-        IncidentType.Elopement => 'E',
-        IncidentType.Other => 'O',
-        _ => 'O'
-    };
+        return type switch
+        {
+            IncidentType.Fall => 'F',
+            IncidentType.Medication => 'M',
+            IncidentType.Behavioral => 'B',
+            IncidentType.Medical => 'X',
+            IncidentType.Injury => 'I',
+            IncidentType.Elopement => 'E',
+            IncidentType.Other => 'O',
+            _ => 'O'
+        };
+    }
 
     /// <summary>
-    /// Converts a number to base-36 string (0-9, A-Z).
+    ///     Converts a number to base-36 string (0-9, A-Z).
     /// </summary>
     private static string ToBase36(long value)
     {
         const string chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         if (value == 0) return "0";
-        
-        var result = new System.Text.StringBuilder();
+
+        var result = new StringBuilder();
         while (value > 0)
         {
             result.Insert(0, chars[(int)(value % 36)]);
             value /= 36;
         }
+
         return result.ToString();
     }
 
     /// <summary>
-    /// Calculates Luhn mod 36 checksum character.
-    /// This is an industry-standard algorithm used for validation.
+    ///     Calculates Luhn mod 36 checksum character.
+    ///     This is an industry-standard algorithm used for validation.
     /// </summary>
     private static char CalculateLuhnMod36Checksum(string input)
     {
@@ -1315,7 +1177,7 @@ public sealed class IncidentService : IIncidentService
             var addend = factor * codePoint;
 
             // Sum digits of addend (in base 36)
-            addend = (addend / 36) + (addend % 36);
+            addend = addend / 36 + addend % 36;
             sum += addend;
 
             // Alternate factor between 1 and 2
@@ -1324,14 +1186,14 @@ public sealed class IncidentService : IIncidentService
 
         var remainder = sum % 36;
         var checkCodePoint = (36 - remainder) % 36;
-        
+
         return chars[checkCodePoint];
     }
 
     /// <summary>
-    /// Validates an incident number checksum.
-    /// Format: {T}IR{HH}{NNNN}{C} where T is type code (F, M, B, X, I, E, O)
-    /// Returns true if the checksum is valid.
+    ///     Validates an incident number checksum.
+    ///     Format: {T}IR{HH}{NNNN}{C} where T is type code (F, M, B, X, I, E, O)
+    ///     Returns true if the checksum is valid.
     /// </summary>
     public static bool ValidateIncidentNumber(string incidentNumber)
     {
@@ -1346,7 +1208,7 @@ public sealed class IncidentService : IIncidentService
         var payload = incidentNumber[..^1]; // Everything except the checksum
         var providedChecksum = incidentNumber[^1];
         var calculatedChecksum = CalculateLuhnMod36Checksum(payload);
-        
+
         return char.ToUpperInvariant(providedChecksum) == calculatedChecksum;
     }
 

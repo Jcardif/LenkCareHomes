@@ -9,12 +9,12 @@ using Microsoft.EntityFrameworkCore;
 namespace LenkCareHomes.Api.Services.Homes;
 
 /// <summary>
-/// Service implementation for home management operations.
+///     Service implementation for home management operations.
 /// </summary>
 public sealed class HomeService : IHomeService
 {
-    private readonly ApplicationDbContext _dbContext;
     private readonly IAuditLogService _auditService;
+    private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<HomeService> _logger;
 
     public HomeService(
@@ -35,16 +35,10 @@ public sealed class HomeService : IHomeService
     {
         var query = _dbContext.Homes.AsNoTracking();
 
-        if (!includeInactive)
-        {
-            query = query.Where(h => h.IsActive);
-        }
+        if (!includeInactive) query = query.Where(h => h.IsActive);
 
         // Filter by allowed homes (for caregivers)
-        if (allowedHomeIds is not null)
-        {
-            query = query.Where(h => allowedHomeIds.Contains(h.Id));
-        }
+        if (allowedHomeIds is not null) query = query.Where(h => allowedHomeIds.Contains(h.Id));
 
         var homes = await query
             .Include(h => h.Beds)
@@ -74,10 +68,7 @@ public sealed class HomeService : IHomeService
             .Include(h => h.Clients)
             .FirstOrDefaultAsync(h => h.Id == homeId, cancellationToken);
 
-        if (home is null)
-        {
-            return null;
-        }
+        if (home is null) return null;
 
         return MapToDto(home);
     }
@@ -93,23 +84,17 @@ public sealed class HomeService : IHomeService
 
         // Validate request
         if (string.IsNullOrWhiteSpace(request.Name))
-        {
             return new HomeOperationResponse { Success = false, Error = "Home name is required." };
-        }
 
         if (request.Capacity <= 0)
-        {
             return new HomeOperationResponse { Success = false, Error = "Capacity must be greater than 0." };
-        }
 
         // Check for duplicate name
         var existingHome = await _dbContext.Homes
             .AnyAsync(h => h.Name == request.Name, cancellationToken);
 
         if (existingHome)
-        {
             return new HomeOperationResponse { Success = false, Error = "A home with this name already exists." };
-        }
 
         var home = new Home
         {
@@ -167,10 +152,7 @@ public sealed class HomeService : IHomeService
             .Include(h => h.Clients)
             .FirstOrDefaultAsync(h => h.Id == homeId, cancellationToken);
 
-        if (home is null)
-        {
-            return new HomeOperationResponse { Success = false, Error = "Home not found." };
-        }
+        if (home is null) return new HomeOperationResponse { Success = false, Error = "Home not found." };
 
         // Check for duplicate name if name is being changed
         if (!string.IsNullOrWhiteSpace(request.Name) && request.Name != home.Name)
@@ -179,48 +161,26 @@ public sealed class HomeService : IHomeService
                 .AnyAsync(h => h.Name == request.Name && h.Id != homeId, cancellationToken);
 
             if (existingHome)
-            {
                 return new HomeOperationResponse { Success = false, Error = "A home with this name already exists." };
-            }
         }
 
         // Update properties if provided
-        if (!string.IsNullOrWhiteSpace(request.Name))
-        {
-            home.Name = request.Name;
-        }
+        if (!string.IsNullOrWhiteSpace(request.Name)) home.Name = request.Name;
 
-        if (!string.IsNullOrWhiteSpace(request.Address))
-        {
-            home.Address = request.Address;
-        }
+        if (!string.IsNullOrWhiteSpace(request.Address)) home.Address = request.Address;
 
-        if (!string.IsNullOrWhiteSpace(request.City))
-        {
-            home.City = request.City;
-        }
+        if (!string.IsNullOrWhiteSpace(request.City)) home.City = request.City;
 
-        if (!string.IsNullOrWhiteSpace(request.State))
-        {
-            home.State = request.State;
-        }
+        if (!string.IsNullOrWhiteSpace(request.State)) home.State = request.State;
 
-        if (!string.IsNullOrWhiteSpace(request.ZipCode))
-        {
-            home.ZipCode = request.ZipCode;
-        }
+        if (!string.IsNullOrWhiteSpace(request.ZipCode)) home.ZipCode = request.ZipCode;
 
-        if (request.PhoneNumber is not null)
-        {
-            home.PhoneNumber = request.PhoneNumber;
-        }
+        if (request.PhoneNumber is not null) home.PhoneNumber = request.PhoneNumber;
 
         if (request.Capacity.HasValue)
         {
             if (request.Capacity.Value <= 0)
-            {
                 return new HomeOperationResponse { Success = false, Error = "Capacity must be greater than 0." };
-            }
             home.Capacity = request.Capacity.Value;
         }
 
@@ -263,21 +223,17 @@ public sealed class HomeService : IHomeService
             .Include(h => h.Clients)
             .FirstOrDefaultAsync(h => h.Id == homeId, cancellationToken);
 
-        if (home is null)
-        {
-            return new HomeOperationResponse { Success = false, Error = "Home not found." };
-        }
+        if (home is null) return new HomeOperationResponse { Success = false, Error = "Home not found." };
 
         // Check if there are active clients
         var activeClientsCount = home.Clients.Count(c => c.IsActive);
         if (activeClientsCount > 0)
-        {
             return new HomeOperationResponse
             {
                 Success = false,
-                Error = $"Cannot deactivate home with {activeClientsCount} active client(s). Please discharge all clients first."
+                Error =
+                    $"Cannot deactivate home with {activeClientsCount} active client(s). Please discharge all clients first."
             };
-        }
 
         home.IsActive = false;
         home.UpdatedAt = DateTime.UtcNow;
@@ -319,10 +275,7 @@ public sealed class HomeService : IHomeService
             .Include(h => h.Clients)
             .FirstOrDefaultAsync(h => h.Id == homeId, cancellationToken);
 
-        if (home is null)
-        {
-            return new HomeOperationResponse { Success = false, Error = "Home not found." };
-        }
+        if (home is null) return new HomeOperationResponse { Success = false, Error = "Home not found." };
 
         home.IsActive = true;
         home.UpdatedAt = DateTime.UtcNow;

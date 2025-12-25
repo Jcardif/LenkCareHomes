@@ -1,12 +1,12 @@
 namespace LenkCareHomes.Api.Services.Email;
 
 /// <summary>
-/// Service interface for sending emails.
+///     Service interface for sending emails.
 /// </summary>
 public interface IEmailService
 {
     /// <summary>
-    /// Sends a user invitation email.
+    ///     Sends a user invitation email.
     /// </summary>
     /// <param name="toEmail">Recipient email address.</param>
     /// <param name="firstName">User's first name.</param>
@@ -19,7 +19,7 @@ public interface IEmailService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Sends a password reset email.
+    ///     Sends a password reset email.
     /// </summary>
     /// <param name="toEmail">Recipient email address.</param>
     /// <param name="firstName">User's first name.</param>
@@ -32,7 +32,7 @@ public interface IEmailService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Sends an MFA reset notification email.
+    ///     Sends an MFA reset notification email.
     /// </summary>
     /// <param name="toEmail">Recipient email address.</param>
     /// <param name="firstName">User's first name.</param>

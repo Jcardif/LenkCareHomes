@@ -3,7 +3,7 @@ using LenkCareHomes.Api.Models.Appointments;
 namespace LenkCareHomes.Api.Models.Dashboard;
 
 /// <summary>
-/// Dashboard statistics for Admin users.
+///     Dashboard statistics for Admin users.
 /// </summary>
 public sealed record AdminDashboardStats
 {
@@ -22,7 +22,7 @@ public sealed record AdminDashboardStats
 }
 
 /// <summary>
-/// DTO for upcoming client birthdays.
+///     DTO for upcoming client birthdays.
 /// </summary>
 public sealed record UpcomingBirthdayDto
 {
@@ -35,7 +35,7 @@ public sealed record UpcomingBirthdayDto
 }
 
 /// <summary>
-/// Dashboard statistics for Caregiver users.
+///     Dashboard statistics for Caregiver users.
 /// </summary>
 public sealed record CaregiverDashboardStats
 {
@@ -47,7 +47,7 @@ public sealed record CaregiverDashboardStats
 }
 
 /// <summary>
-/// DTO for caregiver's assigned home summary.
+///     DTO for caregiver's assigned home summary.
 /// </summary>
 public sealed record CaregiverHomeDto
 {
@@ -60,7 +60,7 @@ public sealed record CaregiverHomeDto
 }
 
 /// <summary>
-/// DTO for caregiver's client view.
+///     DTO for caregiver's client view.
 /// </summary>
 public sealed record CaregiverClientDto
 {

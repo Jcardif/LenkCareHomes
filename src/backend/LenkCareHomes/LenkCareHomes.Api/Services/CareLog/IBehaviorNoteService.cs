@@ -3,12 +3,12 @@ using LenkCareHomes.Api.Models.CareLog;
 namespace LenkCareHomes.Api.Services.CareLog;
 
 /// <summary>
-/// Service interface for behavior note operations.
+///     Service interface for behavior note operations.
 /// </summary>
 public interface IBehaviorNoteService
 {
     /// <summary>
-    /// Creates a new behavior note.
+    ///     Creates a new behavior note.
     /// </summary>
     Task<BehaviorNoteOperationResponse> CreateBehaviorNoteAsync(
         Guid clientId,
@@ -18,7 +18,7 @@ public interface IBehaviorNoteService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets behavior notes for a client.
+    ///     Gets behavior notes for a client.
     /// </summary>
     Task<IReadOnlyList<BehaviorNoteDto>> GetBehaviorNotesAsync(
         Guid clientId,
@@ -27,7 +27,7 @@ public interface IBehaviorNoteService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets a specific behavior note by ID.
+    ///     Gets a specific behavior note by ID.
     /// </summary>
     Task<BehaviorNoteDto?> GetBehaviorNoteByIdAsync(
         Guid clientId,

@@ -8,12 +8,12 @@ using Microsoft.EntityFrameworkCore;
 namespace LenkCareHomes.Api.Services.CareLog;
 
 /// <summary>
-/// Service implementation for activity operations.
+///     Service implementation for activity operations.
 /// </summary>
 public sealed class ActivityService : IActivityService
 {
-    private readonly ApplicationDbContext _dbContext;
     private readonly IAuditLogService _auditService;
+    private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<ActivityService> _logger;
 
     public ActivityService(
@@ -36,22 +36,18 @@ public sealed class ActivityService : IActivityService
         ArgumentNullException.ThrowIfNull(request);
 
         if (string.IsNullOrWhiteSpace(request.ActivityName))
-        {
             return new ActivityOperationResponse
             {
                 Success = false,
                 Error = "Activity name is required."
             };
-        }
 
         if (request.ClientIds.Count == 0)
-        {
             return new ActivityOperationResponse
             {
                 Success = false,
                 Error = "At least one participant is required."
             };
-        }
 
         // Verify all clients exist
         var clients = await _dbContext.Clients
@@ -60,21 +56,17 @@ public sealed class ActivityService : IActivityService
             .ToListAsync(cancellationToken);
 
         if (clients.Count != request.ClientIds.Count)
-        {
             return new ActivityOperationResponse
             {
                 Success = false,
                 Error = "One or more clients not found."
             };
-        }
 
         // For group activities, get the home from clients or request
-        Guid? homeId = request.HomeId;
+        var homeId = request.HomeId;
         if (request.IsGroupActivity && !homeId.HasValue)
-        {
             // Use the home of the first client
             homeId = clients.FirstOrDefault()?.HomeId;
-        }
 
         var activity = new Activity
         {
@@ -145,66 +137,38 @@ public sealed class ActivityService : IActivityService
             .FirstOrDefaultAsync(a => a.Id == activityId, cancellationToken);
 
         if (activity is null)
-        {
             return new ActivityOperationResponse
             {
                 Success = false,
                 Error = "Activity not found."
             };
-        }
 
         // Update properties if provided
-        if (!string.IsNullOrWhiteSpace(request.ActivityName))
-        {
-            activity.ActivityName = request.ActivityName;
-        }
+        if (!string.IsNullOrWhiteSpace(request.ActivityName)) activity.ActivityName = request.ActivityName;
 
-        if (request.Description is not null)
-        {
-            activity.Description = request.Description;
-        }
+        if (request.Description is not null) activity.Description = request.Description;
 
-        if (request.Date.HasValue)
-        {
-            activity.Date = request.Date.Value;
-        }
+        if (request.Date.HasValue) activity.Date = request.Date.Value;
 
-        if (request.StartTime.HasValue)
-        {
-            activity.StartTime = request.StartTime.Value;
-        }
+        if (request.StartTime.HasValue) activity.StartTime = request.StartTime.Value;
 
-        if (request.EndTime.HasValue)
-        {
-            activity.EndTime = request.EndTime.Value;
-        }
+        if (request.EndTime.HasValue) activity.EndTime = request.EndTime.Value;
 
-        if (request.Duration.HasValue)
-        {
-            activity.Duration = request.Duration.Value;
-        }
+        if (request.Duration.HasValue) activity.Duration = request.Duration.Value;
 
-        if (request.Category.HasValue)
-        {
-            activity.Category = request.Category.Value;
-        }
+        if (request.Category.HasValue) activity.Category = request.Category.Value;
 
-        if (request.IsGroupActivity.HasValue)
-        {
-            activity.IsGroupActivity = request.IsGroupActivity.Value;
-        }
+        if (request.IsGroupActivity.HasValue) activity.IsGroupActivity = request.IsGroupActivity.Value;
 
         // Update participants if provided
         if (request.ClientIds is not null)
         {
             if (request.ClientIds.Count == 0)
-            {
                 return new ActivityOperationResponse
                 {
                     Success = false,
                     Error = "At least one participant is required."
                 };
-            }
 
             // Verify all new clients exist
             var clients = await _dbContext.Clients
@@ -213,13 +177,11 @@ public sealed class ActivityService : IActivityService
                 .ToListAsync(cancellationToken);
 
             if (clients.Count != request.ClientIds.Count)
-            {
                 return new ActivityOperationResponse
                 {
                     Success = false,
                     Error = "One or more clients not found."
                 };
-            }
 
             // Remove existing participants
             _dbContext.ActivityParticipants.RemoveRange(activity.Participants);
@@ -276,13 +238,11 @@ public sealed class ActivityService : IActivityService
             .FirstOrDefaultAsync(a => a.Id == activityId, cancellationToken);
 
         if (activity is null)
-        {
             return new ActivityOperationResponse
             {
                 Success = false,
                 Error = "Activity not found."
             };
-        }
 
         var activityName = activity.ActivityName;
 
@@ -320,7 +280,7 @@ public sealed class ActivityService : IActivityService
             .Include(a => a.Home)
             .Include(a => a.CreatedBy)
             .Include(a => a.Participants)
-                .ThenInclude(p => p.Client)
+            .ThenInclude(p => p.Client)
             .FirstOrDefaultAsync(a => a.Id == activityId, cancellationToken);
 
         return activity is null ? null : MapToDto(activity);
@@ -338,18 +298,12 @@ public sealed class ActivityService : IActivityService
             .Include(a => a.Home)
             .Include(a => a.CreatedBy)
             .Include(a => a.Participants)
-                .ThenInclude(p => p.Client)
+            .ThenInclude(p => p.Client)
             .Where(a => a.Participants.Any(p => p.ClientId == clientId));
 
-        if (fromDate.HasValue)
-        {
-            query = query.Where(a => a.Date >= fromDate.Value);
-        }
+        if (fromDate.HasValue) query = query.Where(a => a.Date >= fromDate.Value);
 
-        if (toDate.HasValue)
-        {
-            query = query.Where(a => a.Date <= toDate.Value);
-        }
+        if (toDate.HasValue) query = query.Where(a => a.Date <= toDate.Value);
 
         var activities = await query
             .OrderByDescending(a => a.Date)
@@ -370,18 +324,12 @@ public sealed class ActivityService : IActivityService
             .Include(a => a.Home)
             .Include(a => a.CreatedBy)
             .Include(a => a.Participants)
-                .ThenInclude(p => p.Client)
+            .ThenInclude(p => p.Client)
             .Where(a => a.HomeId == homeId);
 
-        if (fromDate.HasValue)
-        {
-            query = query.Where(a => a.Date >= fromDate.Value);
-        }
+        if (fromDate.HasValue) query = query.Where(a => a.Date >= fromDate.Value);
 
-        if (toDate.HasValue)
-        {
-            query = query.Where(a => a.Date <= toDate.Value);
-        }
+        if (toDate.HasValue) query = query.Where(a => a.Date <= toDate.Value);
 
         var activities = await query
             .OrderByDescending(a => a.Date)

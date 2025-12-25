@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using LenkCareHomes.Api.Models.Passkey;
 using LenkCareHomes.Api.Services.Passkey;
 using Microsoft.AspNetCore.Authorization;
@@ -6,14 +7,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace LenkCareHomes.Api.Controllers;
 
 /// <summary>
-/// Controller for WebAuthn/FIDO2 passkey operations.
+///     Controller for WebAuthn/FIDO2 passkey operations.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public sealed class PasskeyController : ControllerBase
 {
-    private readonly IPasskeyService _passkeyService;
     private readonly ILogger<PasskeyController> _logger;
+    private readonly IPasskeyService _passkeyService;
 
     public PasskeyController(
         IPasskeyService passkeyService,
@@ -24,7 +25,7 @@ public sealed class PasskeyController : ControllerBase
     }
 
     /// <summary>
-    /// Begins passkey registration for the current user or a specified user during setup.
+    ///     Begins passkey registration for the current user or a specified user during setup.
     /// </summary>
     /// <param name="userId">User ID (optional, uses current user if not provided).</param>
     /// <param name="passkeySetupToken">Temporary token for setup flow (required if userId is provided).</param>
@@ -48,19 +49,14 @@ public sealed class PasskeyController : ControllerBase
         {
             // Setup flow: MUST have passkeySetupToken
             if (string.IsNullOrEmpty(passkeySetupToken))
-            {
                 return Unauthorized(new { error = "Temporary token is required for setup flow." });
-            }
             targetUserId = userId.Value;
         }
         else
         {
             // Authenticated flow: MUST have currentUserId
             var currentUserId = GetCurrentUserId();
-            if (currentUserId == null)
-            {
-                return Unauthorized();
-            }
+            if (currentUserId == null) return Unauthorized();
             targetUserId = currentUserId.Value;
         }
 
@@ -70,16 +66,13 @@ public sealed class PasskeyController : ControllerBase
             passkeySetupToken,
             cancellationToken);
 
-        if (!response.Success)
-        {
-            return BadRequest(response);
-        }
+        if (!response.Success) return BadRequest(response);
 
         return Ok(response);
     }
 
     /// <summary>
-    /// Completes passkey registration.
+    ///     Completes passkey registration.
     /// </summary>
     /// <param name="userId">User ID (optional, uses current user if not provided).</param>
     /// <param name="passkeySetupToken">Temporary token for setup flow (required if userId is provided).</param>
@@ -103,19 +96,14 @@ public sealed class PasskeyController : ControllerBase
         {
             // Setup flow: MUST have passkeySetupToken
             if (string.IsNullOrEmpty(passkeySetupToken))
-            {
                 return Unauthorized(new { error = "Temporary token is required for setup flow." });
-            }
             targetUserId = userId.Value;
         }
         else
         {
             // Authenticated flow: MUST have currentUserId
             var currentUserId = GetCurrentUserId();
-            if (currentUserId == null)
-            {
-                return Unauthorized();
-            }
+            if (currentUserId == null) return Unauthorized();
             targetUserId = currentUserId.Value;
         }
 
@@ -127,16 +115,13 @@ public sealed class PasskeyController : ControllerBase
             passkeySetupToken,
             cancellationToken);
 
-        if (!response.Success)
-        {
-            return BadRequest(response);
-        }
+        if (!response.Success) return BadRequest(response);
 
         return Ok(response);
     }
 
     /// <summary>
-    /// Begins passkey authentication.
+    ///     Begins passkey authentication.
     /// </summary>
     /// <param name="request">Authentication begin request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -153,16 +138,13 @@ public sealed class PasskeyController : ControllerBase
             request.Email,
             cancellationToken);
 
-        if (!response.Success)
-        {
-            return BadRequest(response);
-        }
+        if (!response.Success) return BadRequest(response);
 
         return Ok(response);
     }
 
     /// <summary>
-    /// Completes passkey authentication.
+    ///     Completes passkey authentication.
     /// </summary>
     /// <param name="request">Authentication complete request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -181,16 +163,13 @@ public sealed class PasskeyController : ControllerBase
             GetUserAgent(),
             cancellationToken);
 
-        if (!response.Success)
-        {
-            return Unauthorized(response);
-        }
+        if (!response.Success) return Unauthorized(response);
 
         return Ok(response);
     }
 
     /// <summary>
-    /// Gets all passkeys for the current user.
+    ///     Gets all passkeys for the current user.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of passkeys.</returns>
@@ -202,17 +181,14 @@ public sealed class PasskeyController : ControllerBase
         CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized();
-        }
+        if (userId is null) return Unauthorized();
 
         var response = await _passkeyService.GetUserPasskeysAsync(userId.Value, cancellationToken);
         return Ok(response);
     }
 
     /// <summary>
-    /// Updates a passkey's device name.
+    ///     Updates a passkey's device name.
     /// </summary>
     /// <param name="passkeyId">Passkey ID.</param>
     /// <param name="request">Update request.</param>
@@ -229,10 +205,7 @@ public sealed class PasskeyController : ControllerBase
         CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized();
-        }
+        if (userId is null) return Unauthorized();
 
         var success = await _passkeyService.UpdatePasskeyAsync(
             userId.Value,
@@ -241,16 +214,13 @@ public sealed class PasskeyController : ControllerBase
             GetClientIpAddress(),
             cancellationToken);
 
-        if (!success)
-        {
-            return NotFound(new { error = "Passkey not found." });
-        }
+        if (!success) return NotFound(new { error = "Passkey not found." });
 
         return Ok(new { message = "Passkey updated successfully." });
     }
 
     /// <summary>
-    /// Deletes a passkey.
+    ///     Deletes a passkey.
     /// </summary>
     /// <param name="passkeyId">Passkey ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -265,10 +235,7 @@ public sealed class PasskeyController : ControllerBase
         CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized();
-        }
+        if (userId is null) return Unauthorized();
 
         var response = await _passkeyService.DeletePasskeyAsync(
             userId.Value,
@@ -276,16 +243,13 @@ public sealed class PasskeyController : ControllerBase
             GetClientIpAddress(),
             cancellationToken);
 
-        if (!response.Success)
-        {
-            return BadRequest(response);
-        }
+        if (!response.Success) return BadRequest(response);
 
         return Ok(response);
     }
 
     /// <summary>
-    /// Gets the passkey count for a user (used during setup).
+    ///     Gets the passkey count for a user (used during setup).
     /// </summary>
     /// <param name="userId">User ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -304,10 +268,7 @@ public sealed class PasskeyController : ControllerBase
     private string? GetClientIpAddress()
     {
         var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-        if (!string.IsNullOrEmpty(forwardedFor))
-        {
-            return forwardedFor.Split(',').First().Trim();
-        }
+        if (!string.IsNullOrEmpty(forwardedFor)) return forwardedFor.Split(',').First().Trim();
 
         return HttpContext.Connection.RemoteIpAddress?.ToString();
     }
@@ -319,11 +280,8 @@ public sealed class PasskeyController : ControllerBase
 
     private Guid? GetCurrentUserId()
     {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (Guid.TryParse(userIdClaim, out var userId))
-        {
-            return userId;
-        }
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(userIdClaim, out var userId)) return userId;
         return null;
     }
 }

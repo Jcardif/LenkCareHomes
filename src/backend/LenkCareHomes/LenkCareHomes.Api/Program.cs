@@ -1,3 +1,8 @@
+using System.Text.Json.Serialization;
+using Azure.Identity;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+using Fido2NetLib;
 using LenkCareHomes.Api.Authorization;
 using LenkCareHomes.Api.Data;
 using LenkCareHomes.Api.Domain.Entities;
@@ -18,8 +23,6 @@ using LenkCareHomes.Api.Services.Passkey;
 using LenkCareHomes.Api.Services.Reports;
 using LenkCareHomes.Api.Services.SyntheticData;
 using LenkCareHomes.Api.Services.Users;
-using Azure.Identity;
-using Fido2NetLib;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -42,11 +45,14 @@ if (!string.IsNullOrWhiteSpace(keyVaultUri))
     {
         if (builder.Environment.IsDevelopment())
         {
-            Log.Warning(ex, "Failed to connect to Azure Key Vault at {KeyVaultUri}. Continuing without Key Vault in development.", keyVaultUri);
+            Log.Warning(ex,
+                "Failed to connect to Azure Key Vault at {KeyVaultUri}. Continuing without Key Vault in development.",
+                keyVaultUri);
         }
         else
         {
-            Log.Fatal(ex, "Failed to connect to Azure Key Vault at {KeyVaultUri}. Application cannot start.", keyVaultUri);
+            Log.Fatal(ex, "Failed to connect to Azure Key Vault at {KeyVaultUri}. Application cannot start.",
+                keyVaultUri);
             throw new InvalidOperationException($"Failed to connect to Azure Key Vault at {keyVaultUri}.", ex);
         }
     }
@@ -87,28 +93,22 @@ var fido2ServerName = fido2Section["ServerName"];
 var fido2Origins = fido2Section.GetSection("Origins").Get<HashSet<string>>();
 
 if (string.IsNullOrWhiteSpace(fido2ServerDomain))
-{
     throw new InvalidOperationException(
         "FIDO2 configuration error: 'Fido2:ServerDomain' is required. " +
         "For local development, configure in appsettings.Development.json. " +
         "For Azure deployments, ensure 'Fido2--ServerDomain' secret exists in Key Vault.");
-}
 
 if (string.IsNullOrWhiteSpace(fido2ServerName))
-{
     throw new InvalidOperationException(
         "FIDO2 configuration error: 'Fido2:ServerName' is required. " +
         "For local development, configure in appsettings.Development.json. " +
         "For Azure deployments, ensure 'Fido2--ServerName' secret exists in Key Vault.");
-}
 
 if (fido2Origins is null || fido2Origins.Count == 0)
-{
     throw new InvalidOperationException(
         "FIDO2 configuration error: 'Fido2:Origins' is required and must contain at least one origin. " +
         "For local development, configure in appsettings.Development.json. " +
         "For Azure deployments, ensure 'Fido2--Origins' secret exists in Key Vault.");
-}
 
 // Configure FIDO2/WebAuthn for passkey authentication
 builder.Services.AddSingleton<IFido2>(sp =>
@@ -128,13 +128,10 @@ builder.Services.AddSingleton<IFido2>(sp =>
 builder.Services.Configure<BlobStorageSettings>(options =>
 {
     builder.Configuration.GetSection(BlobStorageSettings.SectionName).Bind(options);
-    
+
     // Prefer Aspire-injected connection string (ConnectionStrings:blobs) over BlobStorage:ConnectionString
     var aspireConnectionString = builder.Configuration.GetConnectionString("blobs");
-    if (!string.IsNullOrWhiteSpace(aspireConnectionString))
-    {
-        options.ConnectionString = aspireConnectionString;
-    }
+    if (!string.IsNullOrWhiteSpace(aspireConnectionString)) options.ConnectionString = aspireConnectionString;
 });
 
 // Add database context
@@ -143,26 +140,26 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Add ASP.NET Core Identity
 builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
-{
-    // Password policy: 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
-    options.Password.RequiredLength = 8;
-    options.Password.RequireUppercase = true;
-    options.Password.RequireLowercase = true;
-    options.Password.RequireDigit = true;
-    options.Password.RequireNonAlphanumeric = true;
-    options.Password.RequiredUniqueChars = 4;
+    {
+        // Password policy: 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
+        options.Password.RequiredLength = 8;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireDigit = true;
+        options.Password.RequireNonAlphanumeric = true;
+        options.Password.RequiredUniqueChars = 4;
 
-    // User settings
-    options.User.RequireUniqueEmail = true;
+        // User settings
+        options.User.RequireUniqueEmail = true;
 
-    // Lockout disabled per requirements
-    options.Lockout.AllowedForNewUsers = false;
+        // Lockout disabled per requirements
+        options.Lockout.AllowedForNewUsers = false;
 
-    // Sign-in settings
-    options.SignIn.RequireConfirmedEmail = false; // Handled via invitation flow
-})
-.AddEntityFrameworkStores<ApplicationDbContext>()
-.AddDefaultTokenProviders();
+        // Sign-in settings
+        options.SignIn.RequireConfirmedEmail = false; // Handled via invitation flow
+    })
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
 
 // Configure authentication cookie
 builder.Services.ConfigureApplicationCookie(options =>
@@ -234,10 +231,7 @@ builder.Services.AddPhiAccessAuthorization();
 
 // Add controllers with JSON options
 builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
-    });
+    .AddJsonOptions(options => { options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()); });
 
 // Add OpenAPI/Swagger
 builder.Services.AddOpenApi();
@@ -246,7 +240,8 @@ builder.Services.AddOpenApi();
 var frontendUrl = builder.Configuration["Auth:FrontendBaseUrl"];
 if (string.IsNullOrWhiteSpace(frontendUrl))
 {
-    Log.Fatal("Auth:FrontendBaseUrl is not configured. Application cannot start without a valid frontend URL for CORS.");
+    Log.Fatal(
+        "Auth:FrontendBaseUrl is not configured. Application cannot start without a valid frontend URL for CORS.");
     throw new InvalidOperationException("Auth:FrontendBaseUrl configuration is required.");
 }
 
@@ -272,7 +267,6 @@ if (app.Environment.IsDevelopment())
     // Use timeout to prevent hanging if emulator is slow to respond
     var auditService = app.Services.GetRequiredService<IAuditLogService>();
     if (auditService is CosmosAuditLogService cosmosAuditService)
-    {
         try
         {
             app.Logger.LogInformation("Initializing Cosmos DB database and container...");
@@ -281,13 +275,13 @@ if (app.Environment.IsDevelopment())
         }
         catch (OperationCanceledException)
         {
-            app.Logger.LogWarning("Cosmos DB initialization timed out. Audit logging may fail until emulator is ready.");
+            app.Logger.LogWarning(
+                "Cosmos DB initialization timed out. Audit logging may fail until emulator is ready.");
         }
         catch (Exception ex)
         {
             app.Logger.LogWarning(ex, "Failed to initialize Cosmos DB. Audit logging may not work correctly.");
         }
-    }
 
     // Ensure Blob Storage container exists and configure CORS for development
     var blobSettings = app.Services.GetRequiredService<IOptions<BlobStorageSettings>>().Value;
@@ -297,14 +291,14 @@ if (app.Environment.IsDevelopment())
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-            var blobServiceClient = new Azure.Storage.Blobs.BlobServiceClient(blobSettings.ConnectionString);
+            var blobServiceClient = new BlobServiceClient(blobSettings.ConnectionString);
             var containerClient = blobServiceClient.GetBlobContainerClient(blobSettings.ContainerName);
             await containerClient.CreateIfNotExistsAsync(cancellationToken: cts.Token);
             app.Logger.LogInformation("Blob storage container '{Container}' ensured", blobSettings.ContainerName);
-            
+
             // Configure CORS for blob storage (required for direct browser uploads)
             // This allows the frontend to upload directly to blob storage using SAS URLs
-            var corsRule = new Azure.Storage.Blobs.Models.BlobCorsRule
+            var corsRule = new BlobCorsRule
             {
                 AllowedOrigins = frontendUrl,
                 AllowedMethods = "GET,PUT,OPTIONS,HEAD",
@@ -312,7 +306,7 @@ if (app.Environment.IsDevelopment())
                 ExposedHeaders = "*",
                 MaxAgeInSeconds = 3600
             };
-            
+
             var serviceProperties = await blobServiceClient.GetPropertiesAsync(cts.Token);
             serviceProperties.Value.Cors.Clear();
             serviceProperties.Value.Cors.Add(corsRule);

@@ -15,20 +15,19 @@ using Microsoft.EntityFrameworkCore;
 namespace LenkCareHomes.Api.Services.Passkey;
 
 /// <summary>
-/// WebAuthn/FIDO2 passkey service implementation.
+///     WebAuthn/FIDO2 passkey service implementation.
 /// </summary>
 public sealed class PasskeyService : IPasskeyService
 {
-    private readonly IFido2 _fido2;
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly SignInManager<ApplicationUser> _signInManager;
-    private readonly ApplicationDbContext _dbContext;
-    private readonly IAuditLogService _auditLog;
-    private readonly ILogger<PasskeyService> _logger;
-
     // Cache for registration/authentication sessions (in production, use distributed cache)
     private static readonly Dictionary<string, RegistrationSession> RegistrationSessions = new();
     private static readonly Dictionary<string, AuthenticationSession> AuthenticationSessions = new();
+    private readonly IAuditLogService _auditLog;
+    private readonly ApplicationDbContext _dbContext;
+    private readonly IFido2 _fido2;
+    private readonly ILogger<PasskeyService> _logger;
+    private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public PasskeyService(
         IFido2 fido2,
@@ -54,19 +53,16 @@ public sealed class PasskeyService : IPasskeyService
         CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user is null)
-        {
-            return new PasskeyRegistrationBeginResponse { Success = false, Error = "User not found." };
-        }
+        if (user is null) return new PasskeyRegistrationBeginResponse { Success = false, Error = "User not found." };
 
         // If a temp token is provided, validate it
         if (!string.IsNullOrEmpty(passkeySetupToken))
         {
-            var isValid = await _userManager.VerifyUserTokenAsync(user, TokenOptions.DefaultProvider, "PasskeySetup", passkeySetupToken);
+            var isValid = await _userManager.VerifyUserTokenAsync(user, TokenOptions.DefaultProvider, "PasskeySetup",
+                passkeySetupToken);
             if (!isValid)
-            {
-                return new PasskeyRegistrationBeginResponse { Success = false, Error = "Invalid or expired setup token." };
-            }
+                return new PasskeyRegistrationBeginResponse
+                    { Success = false, Error = "Invalid or expired setup token." };
         }
 
         // Get existing credentials to exclude
@@ -139,46 +135,38 @@ public sealed class PasskeyService : IPasskeyService
         {
             var userToCheck = await _userManager.FindByIdAsync(userId.ToString());
             if (userToCheck is null)
-            {
                 return new PasskeyRegistrationCompleteResponse { Success = false, Error = "User not found." };
-            }
 
-            var isValid = await _userManager.VerifyUserTokenAsync(userToCheck, TokenOptions.DefaultProvider, "PasskeySetup", passkeySetupToken);
+            var isValid = await _userManager.VerifyUserTokenAsync(userToCheck, TokenOptions.DefaultProvider,
+                "PasskeySetup", passkeySetupToken);
             if (!isValid)
-            {
-                return new PasskeyRegistrationCompleteResponse { Success = false, Error = "Invalid or expired setup token." };
-            }
+                return new PasskeyRegistrationCompleteResponse
+                    { Success = false, Error = "Invalid or expired setup token." };
         }
 
         RegistrationSession? session;
         lock (RegistrationSessions)
         {
             if (!RegistrationSessions.TryGetValue(request.SessionId, out session))
-            {
-                return new PasskeyRegistrationCompleteResponse { Success = false, Error = "Invalid or expired session." };
-            }
+                return new PasskeyRegistrationCompleteResponse
+                    { Success = false, Error = "Invalid or expired session." };
 
             if (session.UserId != userId)
-            {
                 return new PasskeyRegistrationCompleteResponse { Success = false, Error = "Session mismatch." };
-            }
 
             RegistrationSessions.Remove(request.SessionId);
         }
 
         var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user is null)
-        {
-            return new PasskeyRegistrationCompleteResponse { Success = false, Error = "User not found." };
-        }
+        if (user is null) return new PasskeyRegistrationCompleteResponse { Success = false, Error = "User not found." };
 
         try
         {
-            var attestationResponse = JsonSerializer.Deserialize<AuthenticatorAttestationRawResponse>(request.AttestationResponse);
+            var attestationResponse =
+                JsonSerializer.Deserialize<AuthenticatorAttestationRawResponse>(request.AttestationResponse);
             if (attestationResponse is null)
-            {
-                return new PasskeyRegistrationCompleteResponse { Success = false, Error = "Invalid attestation response." };
-            }
+                return new PasskeyRegistrationCompleteResponse
+                    { Success = false, Error = "Invalid attestation response." };
 
             // Callback to check if credential ID is unique to this user
             IsCredentialIdUniqueToUserAsyncDelegate callback = async (args, ct) =>
@@ -278,9 +266,8 @@ public sealed class PasskeyService : IPasskeyService
                     .ToList();
 
                 if (allowedCredentials.Count == 0)
-                {
-                    return new PasskeyAuthenticationBeginResponse { Success = false, Error = "No passkeys registered." };
-                }
+                    return new PasskeyAuthenticationBeginResponse
+                        { Success = false, Error = "No passkeys registered." };
             }
         }
 
@@ -329,24 +316,23 @@ public sealed class PasskeyService : IPasskeyService
         lock (AuthenticationSessions)
         {
             if (!AuthenticationSessions.TryGetValue(request.SessionId, out session))
-            {
-                return new PasskeyAuthenticationCompleteResponse { Success = false, Error = "Invalid or expired session." };
-            }
+                return new PasskeyAuthenticationCompleteResponse
+                    { Success = false, Error = "Invalid or expired session." };
 
             AuthenticationSessions.Remove(request.SessionId);
         }
 
         try
         {
-            var assertionResponse = JsonSerializer.Deserialize<AuthenticatorAssertionRawResponse>(request.AssertionResponse);
+            var assertionResponse =
+                JsonSerializer.Deserialize<AuthenticatorAssertionRawResponse>(request.AssertionResponse);
             if (assertionResponse is null)
-            {
-                return new PasskeyAuthenticationCompleteResponse { Success = false, Error = "Invalid assertion response." };
-            }
+                return new PasskeyAuthenticationCompleteResponse
+                    { Success = false, Error = "Invalid assertion response." };
 
             // assertionResponse.Id is Base64URL encoded - matches what we store
             var credentialIdBase64Url = assertionResponse.Id;
-            
+
             var passkey = await _dbContext.UserPasskeys
                 .Include(p => p.User)
                 .FirstOrDefaultAsync(p => p.CredentialId == credentialIdBase64Url && p.IsActive, cancellationToken);
@@ -406,7 +392,7 @@ public sealed class PasskeyService : IPasskeyService
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             // Sign in the user
-            await _signInManager.SignInAsync(user, isPersistent: false);
+            await _signInManager.SignInAsync(user, false);
 
             await _auditLog.LogAuthenticationEventAsync(
                 AuditActions.PasskeyAuthenticated,
@@ -430,7 +416,8 @@ public sealed class PasskeyService : IPasskeyService
             var roles = await _userManager.GetRolesAsync(user);
             var token = GenerateAuthToken();
 
-            _logger.LogInformation("User {UserId} authenticated with passkey: {DeviceName}", user.Id, passkey.DeviceName);
+            _logger.LogInformation("User {UserId} authenticated with passkey: {DeviceName}", user.Id,
+                passkey.DeviceName);
 
             return new PasskeyAuthenticationCompleteResponse
             {
@@ -486,10 +473,7 @@ public sealed class PasskeyService : IPasskeyService
         var passkey = await _dbContext.UserPasskeys
             .FirstOrDefaultAsync(p => p.Id == passkeyId && p.UserId == userId, cancellationToken);
 
-        if (passkey is null)
-        {
-            return false;
-        }
+        if (passkey is null) return false;
 
         var oldName = passkey.DeviceName;
         passkey.DeviceName = request.DeviceName;
@@ -519,24 +503,19 @@ public sealed class PasskeyService : IPasskeyService
         var passkey = await _dbContext.UserPasskeys
             .FirstOrDefaultAsync(p => p.Id == passkeyId && p.UserId == userId, cancellationToken);
 
-        if (passkey is null)
-        {
-            return new DeletePasskeyResponse { Success = false, Error = "Passkey not found." };
-        }
+        if (passkey is null) return new DeletePasskeyResponse { Success = false, Error = "Passkey not found." };
 
         // Check if this is the last passkey
         var remainingCount = await _dbContext.UserPasskeys
             .CountAsync(p => p.UserId == userId && p.IsActive && p.Id != passkeyId, cancellationToken);
 
         if (remainingCount == 0)
-        {
             return new DeletePasskeyResponse
             {
                 Success = false,
                 Error = "Cannot delete the last passkey. Please register another passkey first.",
                 RemainingPasskeys = 1
             };
-        }
 
         var deviceName = passkey.DeviceName;
         passkey.IsActive = false;
@@ -589,20 +568,14 @@ public sealed class PasskeyService : IPasskeyService
             .Select(kvp => kvp.Key)
             .ToList();
 
-        foreach (var key in expiredReg)
-        {
-            RegistrationSessions.Remove(key);
-        }
+        foreach (var key in expiredReg) RegistrationSessions.Remove(key);
 
         var expiredAuth = AuthenticationSessions
             .Where(kvp => kvp.Value.CreatedAt < expiry)
             .Select(kvp => kvp.Key)
             .ToList();
 
-        foreach (var key in expiredAuth)
-        {
-            AuthenticationSessions.Remove(key);
-        }
+        foreach (var key in expiredAuth) AuthenticationSessions.Remove(key);
     }
 
     private sealed class RegistrationSession
@@ -622,32 +595,32 @@ public sealed class PasskeyService : IPasskeyService
 }
 
 /// <summary>
-/// Configuration settings for FIDO2/WebAuthn.
-/// Required settings must be configured in appsettings or Key Vault.
+///     Configuration settings for FIDO2/WebAuthn.
+///     Required settings must be configured in appsettings or Key Vault.
 /// </summary>
 public sealed class Fido2Settings
 {
     public const string SectionName = "Fido2";
 
     /// <summary>
-    /// Gets or sets the relying party name (e.g., "LenkCare Homes").
+    ///     Gets or sets the relying party name (e.g., "LenkCare Homes").
     /// </summary>
     public required string ServerName { get; set; }
 
     /// <summary>
-    /// Gets or sets the relying party ID (domain).
-    /// Must match the domain where the frontend is hosted (e.g., "localhost" or "dev.homes.lenkcare.com").
+    ///     Gets or sets the relying party ID (domain).
+    ///     Must match the domain where the frontend is hosted (e.g., "localhost" or "dev.homes.lenkcare.com").
     /// </summary>
     public required string ServerDomain { get; set; }
 
     /// <summary>
-    /// Gets or sets the allowed origins for WebAuthn requests.
-    /// Must include the frontend URL(s) where passkey authentication is initiated from.
+    ///     Gets or sets the allowed origins for WebAuthn requests.
+    ///     Must include the frontend URL(s) where passkey authentication is initiated from.
     /// </summary>
     public required HashSet<string> Origins { get; set; }
 
     /// <summary>
-    /// Gets or sets the timeout in milliseconds.
+    ///     Gets or sets the timeout in milliseconds.
     /// </summary>
     public uint Timeout { get; set; } = 60000;
 }

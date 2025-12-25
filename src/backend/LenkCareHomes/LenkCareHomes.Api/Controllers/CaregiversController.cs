@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using LenkCareHomes.Api.Domain.Constants;
 using LenkCareHomes.Api.Models.Caregivers;
 using LenkCareHomes.Api.Services.Caregivers;
@@ -7,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LenkCareHomes.Api.Controllers;
 
 /// <summary>
-/// Controller for caregiver management and home assignment operations.
+///     Controller for caregiver management and home assignment operations.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -26,7 +27,7 @@ public sealed class CaregiversController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all caregivers.
+    ///     Gets all caregivers.
     /// </summary>
     /// <param name="includeInactive">Whether to include inactive caregivers.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -42,7 +43,7 @@ public sealed class CaregiversController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all caregivers assigned to a specific home.
+    ///     Gets all caregivers assigned to a specific home.
     /// </summary>
     /// <param name="homeId">The home ID to filter caregivers by.</param>
     /// <param name="includeInactive">Whether to include inactive caregivers.</param>
@@ -60,7 +61,7 @@ public sealed class CaregiversController : ControllerBase
     }
 
     /// <summary>
-    /// Gets a caregiver by ID with their home assignments.
+    ///     Gets a caregiver by ID with their home assignments.
     /// </summary>
     /// <param name="id">Caregiver ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -73,16 +74,13 @@ public sealed class CaregiversController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var caregiver = await _caregiverService.GetCaregiverByIdAsync(id, cancellationToken);
-        if (caregiver is null)
-        {
-            return NotFound();
-        }
+        if (caregiver is null) return NotFound();
 
         return Ok(caregiver);
     }
 
     /// <summary>
-    /// Assigns homes to a caregiver.
+    ///     Assigns homes to a caregiver.
     /// </summary>
     /// <param name="id">Caregiver ID.</param>
     /// <param name="request">Assign homes request.</param>
@@ -99,10 +97,7 @@ public sealed class CaregiversController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _caregiverService.AssignHomesAsync(
             id,
@@ -114,9 +109,7 @@ public sealed class CaregiversController : ControllerBase
         if (!response.Success)
         {
             if (response.Error == "Caregiver not found." || response.Error == "User is not a caregiver.")
-            {
                 return NotFound();
-            }
             return BadRequest(response);
         }
 
@@ -124,7 +117,7 @@ public sealed class CaregiversController : ControllerBase
     }
 
     /// <summary>
-    /// Removes a home assignment from a caregiver.
+    ///     Removes a home assignment from a caregiver.
     /// </summary>
     /// <param name="id">Caregiver ID.</param>
     /// <param name="homeId">Home ID to remove.</param>
@@ -140,10 +133,7 @@ public sealed class CaregiversController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _caregiverService.RemoveHomeAssignmentAsync(
             id,
@@ -154,10 +144,7 @@ public sealed class CaregiversController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Home assignment not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Home assignment not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -167,21 +154,15 @@ public sealed class CaregiversController : ControllerBase
     private string? GetClientIpAddress()
     {
         var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-        if (!string.IsNullOrEmpty(forwardedFor))
-        {
-            return forwardedFor.Split(',').First().Trim();
-        }
+        if (!string.IsNullOrEmpty(forwardedFor)) return forwardedFor.Split(',').First().Trim();
 
         return HttpContext.Connection.RemoteIpAddress?.ToString();
     }
 
     private Guid? GetCurrentUserId()
     {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (Guid.TryParse(userIdClaim, out var userId))
-        {
-            return userId;
-        }
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(userIdClaim, out var userId)) return userId;
         return null;
     }
 }

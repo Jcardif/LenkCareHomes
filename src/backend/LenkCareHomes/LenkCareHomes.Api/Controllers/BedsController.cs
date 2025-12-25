@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using LenkCareHomes.Api.Domain.Constants;
 using LenkCareHomes.Api.Models.Beds;
 using LenkCareHomes.Api.Services.Beds;
@@ -7,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LenkCareHomes.Api.Controllers;
 
 /// <summary>
-/// Controller for bed management operations.
+///     Controller for bed management operations.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -26,7 +27,7 @@ public sealed class BedsController : ControllerBase
     }
 
     /// <summary>
-    /// Gets a bed by ID.
+    ///     Gets a bed by ID.
     /// </summary>
     /// <param name="id">Bed ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -39,16 +40,13 @@ public sealed class BedsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var bed = await _bedService.GetBedByIdAsync(id, cancellationToken);
-        if (bed is null)
-        {
-            return NotFound();
-        }
+        if (bed is null) return NotFound();
 
         return Ok(bed);
     }
 
     /// <summary>
-    /// Updates a bed.
+    ///     Updates a bed.
     /// </summary>
     /// <param name="id">Bed ID.</param>
     /// <param name="request">Update bed request.</param>
@@ -65,10 +63,7 @@ public sealed class BedsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _bedService.UpdateBedAsync(
             id,
@@ -79,10 +74,7 @@ public sealed class BedsController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Bed not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Bed not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -92,21 +84,15 @@ public sealed class BedsController : ControllerBase
     private string? GetClientIpAddress()
     {
         var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-        if (!string.IsNullOrEmpty(forwardedFor))
-        {
-            return forwardedFor.Split(',').First().Trim();
-        }
+        if (!string.IsNullOrEmpty(forwardedFor)) return forwardedFor.Split(',').First().Trim();
 
         return HttpContext.Connection.RemoteIpAddress?.ToString();
     }
 
     private Guid? GetCurrentUserId()
     {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (Guid.TryParse(userIdClaim, out var userId))
-        {
-            return userId;
-        }
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(userIdClaim, out var userId)) return userId;
         return null;
     }
 }

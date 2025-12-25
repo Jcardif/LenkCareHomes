@@ -3,12 +3,12 @@ using LenkCareHomes.Api.Models.Clients;
 namespace LenkCareHomes.Api.Services.Clients;
 
 /// <summary>
-/// Service interface for client management operations.
+///     Service interface for client management operations.
 /// </summary>
 public interface IClientService
 {
     /// <summary>
-    /// Gets all clients, optionally filtered by home and/or active status.
+    ///     Gets all clients, optionally filtered by home and/or active status.
     /// </summary>
     Task<IReadOnlyList<ClientSummaryDto>> GetAllClientsAsync(
         Guid? homeId = null,
@@ -17,7 +17,7 @@ public interface IClientService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets a client by ID.
+    ///     Gets a client by ID.
     /// </summary>
     Task<ClientDto?> GetClientByIdAsync(
         Guid clientId,
@@ -25,7 +25,7 @@ public interface IClientService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Admits a new client.
+    ///     Admits a new client.
     /// </summary>
     Task<ClientOperationResponse> AdmitClientAsync(
         AdmitClientRequest request,
@@ -34,7 +34,7 @@ public interface IClientService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Updates an existing client.
+    ///     Updates an existing client.
     /// </summary>
     Task<ClientOperationResponse> UpdateClientAsync(
         Guid clientId,
@@ -45,7 +45,7 @@ public interface IClientService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Discharges a client.
+    ///     Discharges a client.
     /// </summary>
     Task<ClientOperationResponse> DischargeClientAsync(
         Guid clientId,
@@ -55,7 +55,7 @@ public interface IClientService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Transfers a client to a different bed.
+    ///     Transfers a client to a different bed.
     /// </summary>
     Task<ClientOperationResponse> TransferClientAsync(
         Guid clientId,
@@ -65,7 +65,7 @@ public interface IClientService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets clients for caregiver view (only from assigned homes).
+    ///     Gets clients for caregiver view (only from assigned homes).
     /// </summary>
     Task<IReadOnlyList<ClientSummaryDto>> GetClientsByHomeIdsAsync(
         IReadOnlyList<Guid> homeIds,

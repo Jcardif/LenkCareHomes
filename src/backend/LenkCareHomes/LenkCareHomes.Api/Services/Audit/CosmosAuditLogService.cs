@@ -5,18 +5,15 @@ using Microsoft.Extensions.Options;
 namespace LenkCareHomes.Api.Services.Audit;
 
 /// <summary>
-/// Cosmos DB implementation of the audit log service.
-/// Writes audit entries asynchronously to maintain performance.
+///     Cosmos DB implementation of the audit log service.
+///     Writes audit entries asynchronously to maintain performance.
 /// </summary>
 public sealed class CosmosAuditLogService : IAuditLogService, IDisposable
 {
-    private readonly CosmosClient? _cosmosClient;
     private readonly Container? _container;
+    private readonly CosmosClient? _cosmosClient;
     private readonly ILogger<CosmosAuditLogService> _logger;
     private readonly CosmosDbSettings _settings;
-
-    /// <inheritdoc />
-    public bool IsConfigured => _container is not null;
 
     public CosmosAuditLogService(
         IOptions<CosmosDbSettings> settings,
@@ -46,13 +43,15 @@ public sealed class CosmosAuditLogService : IAuditLogService, IDisposable
 
         // In development, disable SSL validation for Cosmos DB Emulator
         // The emulator uses a self-signed certificate
-        if (environment.IsDevelopment() && connectionString.Contains("localhost:8081", StringComparison.OrdinalIgnoreCase))
+        if (environment.IsDevelopment() &&
+            connectionString.Contains("localhost:8081", StringComparison.OrdinalIgnoreCase))
         {
             clientOptions.HttpClientFactory = () =>
             {
                 var handler = new HttpClientHandler
                 {
-                    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                    ServerCertificateCustomValidationCallback =
+                        HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
                 };
                 return new HttpClient(handler);
             };
@@ -64,39 +63,8 @@ public sealed class CosmosAuditLogService : IAuditLogService, IDisposable
         _container = _cosmosClient.GetContainer(settings.Value.DatabaseName, settings.Value.ContainerName);
     }
 
-    /// <summary>
-    /// Ensures the database and container exist in Cosmos DB.
-    /// Called during application startup in development.
-    /// </summary>
-    public async Task EnsureCreatedAsync(CancellationToken cancellationToken = default)
-    {
-        if (_cosmosClient is null)
-        {
-            _logger.LogDebug("Cosmos DB not configured, skipping database creation");
-            return;
-        }
-
-        try
-        {
-            var database = await _cosmosClient.CreateDatabaseIfNotExistsAsync(
-                _settings.DatabaseName,
-                cancellationToken: cancellationToken);
-
-            await database.Database.CreateContainerIfNotExistsAsync(
-                new ContainerProperties(_settings.ContainerName, "/partitionKey"),
-                cancellationToken: cancellationToken);
-
-            _logger.LogInformation(
-                "Cosmos DB database '{Database}' and container '{Container}' ensured",
-                _settings.DatabaseName,
-                _settings.ContainerName);
-        }
-        catch (CosmosException ex)
-        {
-            _logger.LogError(ex, "Failed to ensure Cosmos DB database/container exists");
-            throw;
-        }
-    }
+    /// <inheritdoc />
+    public bool IsConfigured => _container is not null;
 
     /// <inheritdoc />
     public async Task LogAsync(AuditLogEntry entry, CancellationToken cancellationToken = default)
@@ -110,7 +78,8 @@ public sealed class CosmosAuditLogService : IAuditLogService, IDisposable
         try
         {
             // Fire and forget pattern for audit logging to avoid blocking requests
-            await _container.CreateItemAsync(entry, new PartitionKey(entry.PartitionKey), cancellationToken: cancellationToken);
+            await _container.CreateItemAsync(entry, new PartitionKey(entry.PartitionKey),
+                cancellationToken: cancellationToken);
             _logger.LogDebug("Audit log entry created: {Action} by {UserId}", entry.Action, entry.UserId);
         }
         catch (CosmosException ex)
@@ -199,10 +168,10 @@ public sealed class CosmosAuditLogService : IAuditLogService, IDisposable
                 {
                     string id = item.id;
                     string partitionKey = item.partitionKey;
-                    
+
                     await _container.DeleteItemAsync<dynamic>(
-                        id, 
-                        new PartitionKey(partitionKey), 
+                        id,
+                        new PartitionKey(partitionKey),
                         cancellationToken: cancellationToken);
                     deletedCount++;
                 }
@@ -220,21 +189,16 @@ public sealed class CosmosAuditLogService : IAuditLogService, IDisposable
     }
 
     /// <inheritdoc />
-    public async Task<AuditLogQueryResult> QueryLogsAsync(AuditLogQueryFilter filter, CancellationToken cancellationToken = default)
+    public async Task<AuditLogQueryResult> QueryLogsAsync(AuditLogQueryFilter filter,
+        CancellationToken cancellationToken = default)
     {
-        if (_container is null)
-        {
-            return new AuditLogQueryResult { Entries = [] };
-        }
+        if (_container is null) return new AuditLogQueryResult { Entries = [] };
 
         var pageSize = Math.Min(Math.Max(filter.PageSize, 1), 100);
         var (queryText, parameters) = BuildAuditQuery(filter);
 
         var queryDefinition = new QueryDefinition(queryText);
-        foreach (var param in parameters)
-        {
-            queryDefinition = queryDefinition.WithParameter(param.Key, param.Value);
-        }
+        foreach (var param in parameters) queryDefinition = queryDefinition.WithParameter(param.Key, param.Value);
 
         var requestOptions = new QueryRequestOptions { MaxItemCount = pageSize };
         var iterator = _container.GetItemQueryIterator<AuditLogEntry>(
@@ -260,12 +224,10 @@ public sealed class CosmosAuditLogService : IAuditLogService, IDisposable
     }
 
     /// <inheritdoc />
-    public async Task<Dictionary<string, int>> GetStatsAsync(DateTime since, CancellationToken cancellationToken = default)
+    public async Task<Dictionary<string, int>> GetStatsAsync(DateTime since,
+        CancellationToken cancellationToken = default)
     {
-        if (_container is null)
-        {
-            return new Dictionary<string, int>();
-        }
+        if (_container is null) return new Dictionary<string, int>();
 
         var queryText = @"
             SELECT c.action, COUNT(1) as count 
@@ -282,17 +244,53 @@ public sealed class CosmosAuditLogService : IAuditLogService, IDisposable
         while (iterator.HasMoreResults)
         {
             var response = await iterator.ReadNextAsync(cancellationToken);
-            foreach (var item in response)
-            {
-                actionCounts[item.Action] = item.Count;
-            }
+            foreach (var item in response) actionCounts[item.Action] = item.Count;
         }
 
         return actionCounts;
     }
 
+    public void Dispose()
+    {
+        _cosmosClient?.Dispose();
+    }
+
     /// <summary>
-    /// Builds the Cosmos DB query for audit logs with all filter conditions.
+    ///     Ensures the database and container exist in Cosmos DB.
+    ///     Called during application startup in development.
+    /// </summary>
+    public async Task EnsureCreatedAsync(CancellationToken cancellationToken = default)
+    {
+        if (_cosmosClient is null)
+        {
+            _logger.LogDebug("Cosmos DB not configured, skipping database creation");
+            return;
+        }
+
+        try
+        {
+            var database = await _cosmosClient.CreateDatabaseIfNotExistsAsync(
+                _settings.DatabaseName,
+                cancellationToken: cancellationToken);
+
+            await database.Database.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(_settings.ContainerName, "/partitionKey"),
+                cancellationToken: cancellationToken);
+
+            _logger.LogInformation(
+                "Cosmos DB database '{Database}' and container '{Container}' ensured",
+                _settings.DatabaseName,
+                _settings.ContainerName);
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Failed to ensure Cosmos DB database/container exists");
+            throw;
+        }
+    }
+
+    /// <summary>
+    ///     Builds the Cosmos DB query for audit logs with all filter conditions.
     /// </summary>
     private static (string QueryText, Dictionary<string, object> Parameters) BuildAuditQuery(AuditLogQueryFilter filter)
     {
@@ -333,10 +331,10 @@ public sealed class CosmosAuditLogService : IAuditLogService, IDisposable
         if (!string.IsNullOrWhiteSpace(filter.SearchText))
         {
             conditions.Add("(CONTAINS(LOWER(c.userEmail), LOWER(@searchText)) OR " +
-                          "CONTAINS(LOWER(c.resourceType), LOWER(@searchText)) OR " +
-                          "CONTAINS(LOWER(c.resourceId), LOWER(@searchText)) OR " +
-                          "CONTAINS(LOWER(c.requestPath), LOWER(@searchText)) OR " +
-                          "CONTAINS(LOWER(c.details), LOWER(@searchText)))");
+                           "CONTAINS(LOWER(c.resourceType), LOWER(@searchText)) OR " +
+                           "CONTAINS(LOWER(c.resourceId), LOWER(@searchText)) OR " +
+                           "CONTAINS(LOWER(c.requestPath), LOWER(@searchText)) OR " +
+                           "CONTAINS(LOWER(c.details), LOWER(@searchText)))");
             parameters["@searchText"] = filter.SearchText;
         }
 
@@ -352,10 +350,7 @@ public sealed class CosmosAuditLogService : IAuditLogService, IDisposable
             parameters["@toDate"] = filter.ToDate.Value.ToString("o");
         }
 
-        if (conditions.Count > 0)
-        {
-            queryParts.Add("WHERE " + string.Join(" AND ", conditions));
-        }
+        if (conditions.Count > 0) queryParts.Add("WHERE " + string.Join(" AND ", conditions));
 
         queryParts.Add("ORDER BY c.timestamp DESC");
 
@@ -364,35 +359,30 @@ public sealed class CosmosAuditLogService : IAuditLogService, IDisposable
 
     private sealed class ActionCountResult
     {
-        public string Action { get; set; } = string.Empty;
+        public string Action { get; } = string.Empty;
         public int Count { get; set; }
-    }
-
-    public void Dispose()
-    {
-        _cosmosClient?.Dispose();
     }
 }
 
 /// <summary>
-/// Configuration settings for Cosmos DB audit logging.
+///     Configuration settings for Cosmos DB audit logging.
 /// </summary>
 public sealed class CosmosDbSettings
 {
     public const string SectionName = "CosmosDb";
 
     /// <summary>
-    /// Gets or sets the Cosmos DB connection string.
+    ///     Gets or sets the Cosmos DB connection string.
     /// </summary>
     public string ConnectionString { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the database name.
+    ///     Gets or sets the database name.
     /// </summary>
     public string DatabaseName { get; set; } = "LenkCareHomes";
 
     /// <summary>
-    /// Gets or sets the container name for audit logs.
+    ///     Gets or sets the container name for audit logs.
     /// </summary>
     public string ContainerName { get; set; } = "AuditLogs";
 }

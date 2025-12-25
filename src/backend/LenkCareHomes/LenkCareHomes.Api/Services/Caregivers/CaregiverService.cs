@@ -9,14 +9,14 @@ using Microsoft.EntityFrameworkCore;
 namespace LenkCareHomes.Api.Services.Caregivers;
 
 /// <summary>
-/// Service implementation for caregiver management and home assignment operations.
+///     Service implementation for caregiver management and home assignment operations.
 /// </summary>
 public sealed class CaregiverService : ICaregiverService
 {
-    private readonly ApplicationDbContext _dbContext;
-    private readonly UserManager<ApplicationUser> _userManager;
     private readonly IAuditLogService _auditService;
+    private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<CaregiverService> _logger;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public CaregiverService(
         ApplicationDbContext dbContext,
@@ -39,10 +39,7 @@ public sealed class CaregiverService : ICaregiverService
         var caregiverRole = await _dbContext.Roles
             .FirstOrDefaultAsync(r => r.Name == Roles.Caregiver, cancellationToken);
 
-        if (caregiverRole is null)
-        {
-            return [];
-        }
+        if (caregiverRole is null) return [];
 
         var caregiverUserIds = await _dbContext.UserRoles
             .Where(ur => ur.RoleId == caregiverRole.Id)
@@ -54,10 +51,7 @@ public sealed class CaregiverService : ICaregiverService
             .Include(u => u.HomeAssignments)
             .Where(u => caregiverUserIds.Contains(u.Id));
 
-        if (!includeInactive)
-        {
-            query = query.Where(u => u.IsActive);
-        }
+        if (!includeInactive) query = query.Where(u => u.IsActive);
 
         var caregivers = await query
             .OrderBy(u => u.LastName)
@@ -77,25 +71,20 @@ public sealed class CaregiverService : ICaregiverService
     }
 
     /// <inheritdoc />
-    public async Task<CaregiverDto?> GetCaregiverByIdAsync(Guid caregiverId, CancellationToken cancellationToken = default)
+    public async Task<CaregiverDto?> GetCaregiverByIdAsync(Guid caregiverId,
+        CancellationToken cancellationToken = default)
     {
         var caregiver = await _dbContext.Users
             .AsNoTracking()
             .Include(u => u.HomeAssignments)
-                .ThenInclude(ha => ha.Home)
+            .ThenInclude(ha => ha.Home)
             .FirstOrDefaultAsync(u => u.Id == caregiverId, cancellationToken);
 
-        if (caregiver is null)
-        {
-            return null;
-        }
+        if (caregiver is null) return null;
 
         // Verify user is a caregiver
         var isCaregiver = await _userManager.IsInRoleAsync(caregiver, Roles.Caregiver);
-        if (!isCaregiver)
-        {
-            return null;
-        }
+        if (!isCaregiver) return null;
 
         return MapToDto(caregiver);
     }
@@ -112,25 +101,19 @@ public sealed class CaregiverService : ICaregiverService
 
         var caregiver = await _dbContext.Users
             .Include(u => u.HomeAssignments)
-                .ThenInclude(ha => ha.Home)
+            .ThenInclude(ha => ha.Home)
             .FirstOrDefaultAsync(u => u.Id == caregiverId, cancellationToken);
 
         if (caregiver is null)
-        {
             return new CaregiverOperationResponse { Success = false, Error = "Caregiver not found." };
-        }
 
         // Verify user is a caregiver
         var isCaregiver = await _userManager.IsInRoleAsync(caregiver, Roles.Caregiver);
-        if (!isCaregiver)
-        {
-            return new CaregiverOperationResponse { Success = false, Error = "User is not a caregiver." };
-        }
+        if (!isCaregiver) return new CaregiverOperationResponse { Success = false, Error = "User is not a caregiver." };
 
         if (!caregiver.IsActive)
-        {
-            return new CaregiverOperationResponse { Success = false, Error = "Cannot assign homes to an inactive caregiver." };
-        }
+            return new CaregiverOperationResponse
+                { Success = false, Error = "Cannot assign homes to an inactive caregiver." };
 
         // Verify all homes exist and are active
         var homes = await _dbContext.Homes
@@ -138,19 +121,15 @@ public sealed class CaregiverService : ICaregiverService
             .ToListAsync(cancellationToken);
 
         if (homes.Count != request.HomeIds.Count)
-        {
             return new CaregiverOperationResponse { Success = false, Error = "One or more homes not found." };
-        }
 
         var inactiveHomes = homes.Where(h => !h.IsActive).ToList();
         if (inactiveHomes.Count != 0)
-        {
             return new CaregiverOperationResponse
             {
                 Success = false,
                 Error = $"Cannot assign to inactive homes: {string.Join(", ", inactiveHomes.Select(h => h.Name))}"
             };
-        }
 
         // Get existing active assignments
         var existingActiveAssignments = caregiver.HomeAssignments
@@ -165,13 +144,11 @@ public sealed class CaregiverService : ICaregiverService
 
         // Remove assignments that are no longer in the request
         foreach (var existingAssignment in existingActiveAssignments)
-        {
             if (!requestedHomeIds.Contains(existingAssignment.HomeId))
             {
                 existingAssignment.IsActive = false;
                 unassignedHomeNames.Add(existingAssignment.Home?.Name ?? existingAssignment.HomeId.ToString());
             }
-        }
 
         // Add new assignments or reactivate inactive ones
         foreach (var homeId in request.HomeIds)
@@ -251,7 +228,7 @@ public sealed class CaregiverService : ICaregiverService
         var updatedCaregiver = await _dbContext.Users
             .AsNoTracking()
             .Include(u => u.HomeAssignments)
-                .ThenInclude(ha => ha.Home)
+            .ThenInclude(ha => ha.Home)
             .FirstOrDefaultAsync(u => u.Id == caregiverId, cancellationToken);
 
         return new CaregiverOperationResponse
@@ -275,9 +252,7 @@ public sealed class CaregiverService : ICaregiverService
             .FirstOrDefaultAsync(ca => ca.UserId == caregiverId && ca.HomeId == homeId, cancellationToken);
 
         if (assignment is null)
-        {
             return new CaregiverOperationResponse { Success = false, Error = "Home assignment not found." };
-        }
 
         assignment.IsActive = false;
 
@@ -304,7 +279,7 @@ public sealed class CaregiverService : ICaregiverService
         var updatedCaregiver = await _dbContext.Users
             .AsNoTracking()
             .Include(u => u.HomeAssignments)
-                .ThenInclude(ha => ha.Home)
+            .ThenInclude(ha => ha.Home)
             .FirstOrDefaultAsync(u => u.Id == caregiverId, cancellationToken);
 
         return new CaregiverOperationResponse
@@ -339,20 +314,14 @@ public sealed class CaregiverService : ICaregiverService
             .Select(cha => cha.UserId)
             .ToListAsync(cancellationToken);
 
-        if (caregiverUserIds.Count == 0)
-        {
-            return [];
-        }
+        if (caregiverUserIds.Count == 0) return [];
 
         var query = _dbContext.Users
             .AsNoTracking()
             .Include(u => u.HomeAssignments)
             .Where(u => caregiverUserIds.Contains(u.Id));
 
-        if (!includeInactive)
-        {
-            query = query.Where(u => u.IsActive);
-        }
+        if (!includeInactive) query = query.Where(u => u.IsActive);
 
         var caregivers = await query
             .OrderBy(u => u.LastName)

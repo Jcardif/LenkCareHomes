@@ -1,7 +1,7 @@
 namespace LenkCareHomes.Api.Models.Caregivers;
 
 /// <summary>
-/// DTO for caregiver information with home assignments.
+///     DTO for caregiver information with home assignments.
 /// </summary>
 public sealed record CaregiverDto
 {
@@ -19,7 +19,7 @@ public sealed record CaregiverDto
 }
 
 /// <summary>
-/// DTO for caregiver home assignment.
+///     DTO for caregiver home assignment.
 /// </summary>
 public sealed record CaregiverHomeAssignmentDto
 {
@@ -31,18 +31,18 @@ public sealed record CaregiverHomeAssignmentDto
 }
 
 /// <summary>
-/// Request model for assigning homes to a caregiver.
+///     Request model for assigning homes to a caregiver.
 /// </summary>
 public sealed record AssignHomesRequest
 {
     /// <summary>
-    /// Gets the list of home IDs to assign.
+    ///     Gets the list of home IDs to assign.
     /// </summary>
     public required IReadOnlyList<Guid> HomeIds { get; init; }
 }
 
 /// <summary>
-/// Response model for caregiver operations.
+///     Response model for caregiver operations.
 /// </summary>
 public sealed record CaregiverOperationResponse
 {
@@ -52,7 +52,7 @@ public sealed record CaregiverOperationResponse
 }
 
 /// <summary>
-/// Summary DTO for caregiver listings.
+///     Summary DTO for caregiver listings.
 /// </summary>
 public sealed record CaregiverSummaryDto
 {

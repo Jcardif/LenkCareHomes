@@ -9,14 +9,10 @@ using Microsoft.EntityFrameworkCore;
 namespace LenkCareHomes.Api.Services.CareLog;
 
 /// <summary>
-/// Service implementation for vitals log operations.
+///     Service implementation for vitals log operations.
 /// </summary>
 public sealed class VitalsLogService : IVitalsLogService
 {
-    private readonly ApplicationDbContext _dbContext;
-    private readonly IAuditLogService _auditService;
-    private readonly ILogger<VitalsLogService> _logger;
-
     // Validation ranges for vitals
     private const int MinSystolicBP = 50;
     private const int MaxSystolicBP = 300;
@@ -30,6 +26,9 @@ public sealed class VitalsLogService : IVitalsLogService
     private const decimal MaxTempC = 43m;
     private const int MinO2Sat = 70;
     private const int MaxO2Sat = 100;
+    private readonly IAuditLogService _auditService;
+    private readonly ApplicationDbContext _dbContext;
+    private readonly ILogger<VitalsLogService> _logger;
 
     public VitalsLogService(
         ApplicationDbContext dbContext,
@@ -57,24 +56,20 @@ public sealed class VitalsLogService : IVitalsLogService
             !request.Pulse.HasValue &&
             !request.Temperature.HasValue &&
             !request.OxygenSaturation.HasValue)
-        {
             return new VitalsLogOperationResponse
             {
                 Success = false,
                 Error = "At least one vital sign must be recorded."
             };
-        }
 
         // Validate ranges
         var validationError = ValidateVitals(request);
         if (validationError is not null)
-        {
             return new VitalsLogOperationResponse
             {
                 Success = false,
                 Error = validationError
             };
-        }
 
         // Verify client exists
         var client = await _dbContext.Clients
@@ -82,13 +77,11 @@ public sealed class VitalsLogService : IVitalsLogService
             .FirstOrDefaultAsync(c => c.Id == clientId, cancellationToken);
 
         if (client is null)
-        {
             return new VitalsLogOperationResponse
             {
                 Success = false,
                 Error = "Client not found."
             };
-        }
 
         var vitalsLog = new VitalsLog
         {
@@ -145,15 +138,9 @@ public sealed class VitalsLogService : IVitalsLogService
             .Include(v => v.Caregiver)
             .Where(v => v.ClientId == clientId);
 
-        if (fromDate.HasValue)
-        {
-            query = query.Where(v => v.Timestamp >= fromDate.Value);
-        }
+        if (fromDate.HasValue) query = query.Where(v => v.Timestamp >= fromDate.Value);
 
-        if (toDate.HasValue)
-        {
-            query = query.Where(v => v.Timestamp <= toDate.Value);
-        }
+        if (toDate.HasValue) query = query.Where(v => v.Timestamp <= toDate.Value);
 
         var logs = await query
             .OrderByDescending(v => v.Timestamp)
@@ -179,19 +166,14 @@ public sealed class VitalsLogService : IVitalsLogService
     private static string? ValidateVitals(CreateVitalsLogRequest request)
     {
         if (request.SystolicBP.HasValue && (request.SystolicBP < MinSystolicBP || request.SystolicBP > MaxSystolicBP))
-        {
             return $"Systolic blood pressure must be between {MinSystolicBP} and {MaxSystolicBP} mmHg.";
-        }
 
-        if (request.DiastolicBP.HasValue && (request.DiastolicBP < MinDiastolicBP || request.DiastolicBP > MaxDiastolicBP))
-        {
+        if (request.DiastolicBP.HasValue &&
+            (request.DiastolicBP < MinDiastolicBP || request.DiastolicBP > MaxDiastolicBP))
             return $"Diastolic blood pressure must be between {MinDiastolicBP} and {MaxDiastolicBP} mmHg.";
-        }
 
         if (request.Pulse.HasValue && (request.Pulse < MinPulse || request.Pulse > MaxPulse))
-        {
             return $"Pulse must be between {MinPulse} and {MaxPulse} bpm.";
-        }
 
         if (request.Temperature.HasValue)
         {
@@ -206,10 +188,9 @@ public sealed class VitalsLogService : IVitalsLogService
             }
         }
 
-        if (request.OxygenSaturation.HasValue && (request.OxygenSaturation < MinO2Sat || request.OxygenSaturation > MaxO2Sat))
-        {
+        if (request.OxygenSaturation.HasValue &&
+            (request.OxygenSaturation < MinO2Sat || request.OxygenSaturation > MaxO2Sat))
             return $"Oxygen saturation must be between {MinO2Sat}% and {MaxO2Sat}%.";
-        }
 
         return null;
     }
