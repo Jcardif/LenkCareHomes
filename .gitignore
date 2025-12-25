@@ -418,8 +418,8 @@ FodyWeavers.xsd
 *.msp
 
 # Synthetic data JSON files (generated, not committed)
-**/SyntheticData
-
+# Only ignore the data folder, not the Services/SyntheticData folder with service classes
+src/backend/LenkCareHomes/LenkCareHomes.Api/SyntheticData/
 
 # Key Vault secrets file (contains sensitive data)
 infra/keyvault/secrets.txt
