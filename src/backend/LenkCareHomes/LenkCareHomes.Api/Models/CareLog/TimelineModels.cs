@@ -1,7 +1,7 @@
 namespace LenkCareHomes.Api.Models.CareLog;
 
 /// <summary>
-/// Represents a unified care timeline entry.
+///     Represents a unified care timeline entry.
 /// </summary>
 public sealed record TimelineEntryDto
 {
@@ -16,7 +16,7 @@ public sealed record TimelineEntryDto
 }
 
 /// <summary>
-/// Timeline entry types.
+///     Timeline entry types.
 /// </summary>
 public static class TimelineEntryTypes
 {
@@ -29,7 +29,7 @@ public static class TimelineEntryTypes
 }
 
 /// <summary>
-/// Query parameters for timeline.
+///     Query parameters for timeline.
 /// </summary>
 public sealed record TimelineQueryParams
 {
@@ -41,7 +41,7 @@ public sealed record TimelineQueryParams
 }
 
 /// <summary>
-/// Timeline response with pagination.
+///     Timeline response with pagination.
 /// </summary>
 public sealed record TimelineResponse
 {

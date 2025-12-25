@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using LenkCareHomes.Api.Domain.Constants;
 using LenkCareHomes.Api.Models.Reports;
 using LenkCareHomes.Api.Services.Audit;
@@ -9,19 +10,19 @@ using Microsoft.AspNetCore.Mvc;
 namespace LenkCareHomes.Api.Controllers;
 
 /// <summary>
-/// Controller for report generation and download operations.
-/// Admin only - reports contain PHI data.
+///     Controller for report generation and download operations.
+///     Admin only - reports contain PHI data.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = Roles.Admin)]
 public sealed class ReportsController : ControllerBase
 {
-    private readonly IReportService _reportService;
-    private readonly IPdfReportService _pdfReportService;
-    private readonly ICaregiverService _caregiverService;
     private readonly IAuditLogService _auditLogService;
+    private readonly ICaregiverService _caregiverService;
     private readonly ILogger<ReportsController> _logger;
+    private readonly IPdfReportService _pdfReportService;
+    private readonly IReportService _reportService;
 
     public ReportsController(
         IReportService reportService,
@@ -38,7 +39,7 @@ public sealed class ReportsController : ControllerBase
     }
 
     /// <summary>
-    /// Generates a client summary report PDF.
+    ///     Generates a client summary report PDF.
     /// </summary>
     /// <param name="request">The client report request with date range.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -57,20 +58,13 @@ public sealed class ReportsController : ControllerBase
 
         // Validate request
         if (request.StartDate > request.EndDate)
-        {
             return BadRequest(ReportGenerationResponse.Failure("Start date must be before end date."));
-        }
 
-        if (request.EndDate > DateTime.UtcNow)
-        {
-            request = request with { EndDate = DateTime.UtcNow };
-        }
+        if (request.EndDate > DateTime.UtcNow) request = request with { EndDate = DateTime.UtcNow };
 
         // Check if client exists
         if (!await _reportService.ClientExistsAsync(request.ClientId, cancellationToken))
-        {
             return NotFound(ReportGenerationResponse.Failure("Client not found."));
-        }
 
         _logger.LogInformation(
             "Generating client report for {ClientId} from {Start} to {End} by user {UserId}",
@@ -86,9 +80,7 @@ public sealed class ReportsController : ControllerBase
                 cancellationToken);
 
             if (reportData is null)
-            {
                 return NotFound(ReportGenerationResponse.Failure("Failed to retrieve client data."));
-            }
 
             // Generate PDF
             var pdfBytes = _pdfReportService.GenerateClientSummaryPdf(reportData);
@@ -106,7 +98,8 @@ public sealed class ReportsController : ControllerBase
                 cancellationToken);
 
             // Return PDF file
-            var fileName = $"ClientReport_{reportData.Client.FullName.Replace(" ", "_")}_{request.StartDate:yyyyMMdd}_{request.EndDate:yyyyMMdd}.pdf";
+            var fileName =
+                $"ClientReport_{reportData.Client.FullName.Replace(" ", "_")}_{request.StartDate:yyyyMMdd}_{request.EndDate:yyyyMMdd}.pdf";
 
             _logger.LogInformation(
                 "Client report generated successfully for {ClientId}, size: {Size} bytes",
@@ -134,7 +127,7 @@ public sealed class ReportsController : ControllerBase
     }
 
     /// <summary>
-    /// Generates a home summary report PDF.
+    ///     Generates a home summary report PDF.
     /// </summary>
     /// <param name="request">The home report request with date range.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -153,20 +146,13 @@ public sealed class ReportsController : ControllerBase
 
         // Validate request
         if (request.StartDate > request.EndDate)
-        {
             return BadRequest(ReportGenerationResponse.Failure("Start date must be before end date."));
-        }
 
-        if (request.EndDate > DateTime.UtcNow)
-        {
-            request = request with { EndDate = DateTime.UtcNow };
-        }
+        if (request.EndDate > DateTime.UtcNow) request = request with { EndDate = DateTime.UtcNow };
 
         // Check if home exists
         if (!await _reportService.HomeExistsAsync(request.HomeId, cancellationToken))
-        {
             return NotFound(ReportGenerationResponse.Failure("Home not found."));
-        }
 
         _logger.LogInformation(
             "Generating home report for {HomeId} from {Start} to {End} by user {UserId}",
@@ -181,10 +167,7 @@ public sealed class ReportsController : ControllerBase
                 request.EndDate,
                 cancellationToken);
 
-            if (reportData is null)
-            {
-                return NotFound(ReportGenerationResponse.Failure("Failed to retrieve home data."));
-            }
+            if (reportData is null) return NotFound(ReportGenerationResponse.Failure("Failed to retrieve home data."));
 
             // Generate PDF
             var pdfBytes = _pdfReportService.GenerateHomeSummaryPdf(reportData);
@@ -202,7 +185,8 @@ public sealed class ReportsController : ControllerBase
                 cancellationToken);
 
             // Return PDF file
-            var fileName = $"HomeReport_{reportData.Home.Name.Replace(" ", "_")}_{request.StartDate:yyyyMMdd}_{request.EndDate:yyyyMMdd}.pdf";
+            var fileName =
+                $"HomeReport_{reportData.Home.Name.Replace(" ", "_")}_{request.StartDate:yyyyMMdd}_{request.EndDate:yyyyMMdd}.pdf";
 
             _logger.LogInformation(
                 "Home report generated successfully for {HomeId}, size: {Size} bytes",
@@ -231,26 +215,20 @@ public sealed class ReportsController : ControllerBase
 
     private Guid? GetCurrentUserId()
     {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (Guid.TryParse(userIdClaim, out var userId))
-        {
-            return userId;
-        }
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(userIdClaim, out var userId)) return userId;
         return null;
     }
 
     private string? GetCurrentUserEmail()
     {
-        return User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+        return User.FindFirst(ClaimTypes.Email)?.Value;
     }
 
     private string? GetClientIpAddress()
     {
         var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-        if (!string.IsNullOrEmpty(forwardedFor))
-        {
-            return forwardedFor.Split(',').First().Trim();
-        }
+        if (!string.IsNullOrEmpty(forwardedFor)) return forwardedFor.Split(',').First().Trim();
 
         return HttpContext.Connection.RemoteIpAddress?.ToString();
     }

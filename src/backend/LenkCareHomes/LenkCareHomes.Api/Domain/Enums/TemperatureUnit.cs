@@ -1,17 +1,17 @@
 namespace LenkCareHomes.Api.Domain.Enums;
 
 /// <summary>
-/// Temperature measurement units.
+///     Temperature measurement units.
 /// </summary>
 public enum TemperatureUnit
 {
     /// <summary>
-    /// Fahrenheit temperature scale.
+    ///     Fahrenheit temperature scale.
     /// </summary>
     Fahrenheit,
 
     /// <summary>
-    /// Celsius temperature scale.
+    ///     Celsius temperature scale.
     /// </summary>
     Celsius
 }

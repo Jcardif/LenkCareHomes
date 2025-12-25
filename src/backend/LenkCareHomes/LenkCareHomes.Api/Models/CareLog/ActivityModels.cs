@@ -3,7 +3,7 @@ using LenkCareHomes.Api.Domain.Enums;
 namespace LenkCareHomes.Api.Models.CareLog;
 
 /// <summary>
-/// DTO for activity information.
+///     DTO for activity information.
 /// </summary>
 public sealed record ActivityDto
 {
@@ -26,7 +26,7 @@ public sealed record ActivityDto
 }
 
 /// <summary>
-/// DTO for activity participant information.
+///     DTO for activity participant information.
 /// </summary>
 public sealed record ActivityParticipantDto
 {
@@ -35,7 +35,7 @@ public sealed record ActivityParticipantDto
 }
 
 /// <summary>
-/// Request model for creating an activity.
+///     Request model for creating an activity.
 /// </summary>
 public sealed record CreateActivityRequest
 {
@@ -52,7 +52,7 @@ public sealed record CreateActivityRequest
 }
 
 /// <summary>
-/// Request model for updating an activity.
+///     Request model for updating an activity.
 /// </summary>
 public sealed record UpdateActivityRequest
 {
@@ -68,7 +68,7 @@ public sealed record UpdateActivityRequest
 }
 
 /// <summary>
-/// Response model for activity operations.
+///     Response model for activity operations.
 /// </summary>
 public sealed record ActivityOperationResponse
 {

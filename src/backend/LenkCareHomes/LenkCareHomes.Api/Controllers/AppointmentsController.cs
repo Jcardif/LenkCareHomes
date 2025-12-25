@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using LenkCareHomes.Api.Domain.Constants;
 using LenkCareHomes.Api.Domain.Enums;
 using LenkCareHomes.Api.Models.Appointments;
@@ -9,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LenkCareHomes.Api.Controllers;
 
 /// <summary>
-/// Controller for appointment management operations.
+///     Controller for appointment management operations.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -31,8 +32,8 @@ public sealed class AppointmentsController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all appointments with optional filters.
-    /// Caregivers only see appointments for clients in their assigned homes.
+    ///     Gets all appointments with optional filters.
+    ///     Caregivers only see appointments for clients in their assigned homes.
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(PagedAppointmentResponse), StatusCodes.Status200OK)]
@@ -49,17 +50,13 @@ public sealed class AppointmentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         IReadOnlyList<Guid>? allowedHomeIds = null;
         if (!User.IsInRole(Roles.Admin) && !User.IsInRole(Roles.Sysadmin))
         {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
             if (allowedHomeIds.Count == 0)
-            {
                 return Ok(new PagedAppointmentResponse
                 {
                     Items = [],
@@ -70,7 +67,6 @@ public sealed class AppointmentsController : ControllerBase
                     HasNextPage = false,
                     HasPreviousPage = false
                 });
-            }
         }
 
         var result = await _appointmentService.GetAppointmentsAsync(
@@ -90,7 +86,7 @@ public sealed class AppointmentsController : ControllerBase
     }
 
     /// <summary>
-    /// Gets an appointment by ID.
+    ///     Gets an appointment by ID.
     /// </summary>
     [HttpGet("{id:guid}")]
     [ActionName(nameof(GetAppointmentByIdAsync))]
@@ -102,26 +98,18 @@ public sealed class AppointmentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         IReadOnlyList<Guid>? allowedHomeIds = null;
         if (!User.IsInRole(Roles.Admin) && !User.IsInRole(Roles.Sysadmin))
-        {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-        }
 
         var appointment = await _appointmentService.GetAppointmentByIdAsync(id, allowedHomeIds, cancellationToken);
         if (appointment is null)
         {
             // Check if exists but access denied
             var existsButDenied = await _appointmentService.GetAppointmentByIdAsync(id, null, cancellationToken);
-            if (existsButDenied is not null)
-            {
-                return Forbid();
-            }
+            if (existsButDenied is not null) return Forbid();
             return NotFound();
         }
 
@@ -129,7 +117,7 @@ public sealed class AppointmentsController : ControllerBase
     }
 
     /// <summary>
-    /// Gets upcoming appointments for dashboard display.
+    ///     Gets upcoming appointments for dashboard display.
     /// </summary>
     [HttpGet("upcoming")]
     [ProducesResponseType(typeof(IReadOnlyList<UpcomingAppointmentDto>), StatusCodes.Status200OK)]
@@ -139,16 +127,11 @@ public sealed class AppointmentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         IReadOnlyList<Guid>? allowedHomeIds = null;
         if (!User.IsInRole(Roles.Admin) && !User.IsInRole(Roles.Sysadmin))
-        {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-        }
 
         var appointments = await _appointmentService.GetUpcomingAppointmentsAsync(
             days,
@@ -160,7 +143,7 @@ public sealed class AppointmentsController : ControllerBase
     }
 
     /// <summary>
-    /// Gets appointments for a specific client.
+    ///     Gets appointments for a specific client.
     /// </summary>
     [HttpGet("by-client/{clientId:guid}")]
     [ProducesResponseType(typeof(IReadOnlyList<AppointmentSummaryDto>), StatusCodes.Status200OK)]
@@ -170,16 +153,11 @@ public sealed class AppointmentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         IReadOnlyList<Guid>? allowedHomeIds = null;
         if (!User.IsInRole(Roles.Admin) && !User.IsInRole(Roles.Sysadmin))
-        {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-        }
 
         var appointments = await _appointmentService.GetClientAppointmentsAsync(
             clientId,
@@ -191,7 +169,7 @@ public sealed class AppointmentsController : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new appointment.
+    ///     Creates a new appointment.
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(AppointmentOperationResponse), StatusCodes.Status201Created)]
@@ -201,10 +179,7 @@ public sealed class AppointmentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _appointmentService.CreateAppointmentAsync(
             request,
@@ -212,10 +187,7 @@ public sealed class AppointmentsController : ControllerBase
             GetClientIpAddress(),
             cancellationToken);
 
-        if (!response.Success)
-        {
-            return BadRequest(response);
-        }
+        if (!response.Success) return BadRequest(response);
 
         return CreatedAtAction(
             nameof(GetAppointmentByIdAsync),
@@ -224,7 +196,7 @@ public sealed class AppointmentsController : ControllerBase
     }
 
     /// <summary>
-    /// Updates an existing appointment.
+    ///     Updates an existing appointment.
     /// </summary>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(AppointmentOperationResponse), StatusCodes.Status200OK)]
@@ -237,16 +209,11 @@ public sealed class AppointmentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         IReadOnlyList<Guid>? allowedHomeIds = null;
         if (!User.IsInRole(Roles.Admin) && !User.IsInRole(Roles.Sysadmin))
-        {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-        }
 
         var response = await _appointmentService.UpdateAppointmentAsync(
             id,
@@ -261,12 +228,10 @@ public sealed class AppointmentsController : ControllerBase
             if (response.Error == "Appointment not found or access denied.")
             {
                 var existsButDenied = await _appointmentService.GetAppointmentByIdAsync(id, null, cancellationToken);
-                if (existsButDenied is not null)
-                {
-                    return Forbid();
-                }
+                if (existsButDenied is not null) return Forbid();
                 return NotFound();
             }
+
             return BadRequest(response);
         }
 
@@ -274,7 +239,7 @@ public sealed class AppointmentsController : ControllerBase
     }
 
     /// <summary>
-    /// Marks an appointment as completed.
+    ///     Marks an appointment as completed.
     /// </summary>
     [HttpPost("{id:guid}/complete")]
     [ProducesResponseType(typeof(AppointmentOperationResponse), StatusCodes.Status200OK)]
@@ -286,16 +251,11 @@ public sealed class AppointmentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         IReadOnlyList<Guid>? allowedHomeIds = null;
         if (!User.IsInRole(Roles.Admin) && !User.IsInRole(Roles.Sysadmin))
-        {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-        }
 
         var response = await _appointmentService.CompleteAppointmentAsync(
             id,
@@ -307,10 +267,7 @@ public sealed class AppointmentsController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Appointment not found or access denied.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Appointment not found or access denied.") return NotFound();
             return BadRequest(response);
         }
 
@@ -318,7 +275,7 @@ public sealed class AppointmentsController : ControllerBase
     }
 
     /// <summary>
-    /// Cancels an appointment.
+    ///     Cancels an appointment.
     /// </summary>
     [HttpPost("{id:guid}/cancel")]
     [ProducesResponseType(typeof(AppointmentOperationResponse), StatusCodes.Status200OK)]
@@ -330,16 +287,11 @@ public sealed class AppointmentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         IReadOnlyList<Guid>? allowedHomeIds = null;
         if (!User.IsInRole(Roles.Admin) && !User.IsInRole(Roles.Sysadmin))
-        {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-        }
 
         var response = await _appointmentService.CancelAppointmentAsync(
             id,
@@ -351,10 +303,7 @@ public sealed class AppointmentsController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Appointment not found or access denied.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Appointment not found or access denied.") return NotFound();
             return BadRequest(response);
         }
 
@@ -362,7 +311,7 @@ public sealed class AppointmentsController : ControllerBase
     }
 
     /// <summary>
-    /// Marks an appointment as no-show.
+    ///     Marks an appointment as no-show.
     /// </summary>
     [HttpPost("{id:guid}/no-show")]
     [ProducesResponseType(typeof(AppointmentOperationResponse), StatusCodes.Status200OK)]
@@ -374,16 +323,11 @@ public sealed class AppointmentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         IReadOnlyList<Guid>? allowedHomeIds = null;
         if (!User.IsInRole(Roles.Admin) && !User.IsInRole(Roles.Sysadmin))
-        {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-        }
 
         var response = await _appointmentService.MarkNoShowAsync(
             id,
@@ -395,10 +339,7 @@ public sealed class AppointmentsController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Appointment not found or access denied.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Appointment not found or access denied.") return NotFound();
             return BadRequest(response);
         }
 
@@ -406,7 +347,7 @@ public sealed class AppointmentsController : ControllerBase
     }
 
     /// <summary>
-    /// Reschedules an appointment to a new date/time.
+    ///     Reschedules an appointment to a new date/time.
     /// </summary>
     [HttpPost("{id:guid}/reschedule")]
     [ProducesResponseType(typeof(AppointmentOperationResponse), StatusCodes.Status200OK)]
@@ -418,16 +359,11 @@ public sealed class AppointmentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         IReadOnlyList<Guid>? allowedHomeIds = null;
         if (!User.IsInRole(Roles.Admin) && !User.IsInRole(Roles.Sysadmin))
-        {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-        }
 
         var response = await _appointmentService.RescheduleAppointmentAsync(
             id,
@@ -439,10 +375,7 @@ public sealed class AppointmentsController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Appointment not found or access denied.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Appointment not found or access denied.") return NotFound();
             return BadRequest(response);
         }
 
@@ -450,7 +383,7 @@ public sealed class AppointmentsController : ControllerBase
     }
 
     /// <summary>
-    /// Deletes an appointment (Admin only, only scheduled appointments).
+    ///     Deletes an appointment (Admin only, only scheduled appointments).
     /// </summary>
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = Roles.Admin)]
@@ -462,10 +395,7 @@ public sealed class AppointmentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _appointmentService.DeleteAppointmentAsync(
             id,
@@ -475,10 +405,7 @@ public sealed class AppointmentsController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Appointment not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Appointment not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -488,21 +415,15 @@ public sealed class AppointmentsController : ControllerBase
     private string? GetClientIpAddress()
     {
         var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-        if (!string.IsNullOrEmpty(forwardedFor))
-        {
-            return forwardedFor.Split(',').First().Trim();
-        }
+        if (!string.IsNullOrEmpty(forwardedFor)) return forwardedFor.Split(',').First().Trim();
 
         return HttpContext.Connection.RemoteIpAddress?.ToString();
     }
 
     private Guid? GetCurrentUserId()
     {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (Guid.TryParse(userIdClaim, out var userId))
-        {
-            return userId;
-        }
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(userIdClaim, out var userId)) return userId;
         return null;
     }
 }

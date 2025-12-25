@@ -8,15 +8,14 @@ using Microsoft.EntityFrameworkCore;
 namespace LenkCareHomes.Api.Services.CareLog;
 
 /// <summary>
-/// Service implementation for behavior note operations.
+///     Service implementation for behavior note operations.
 /// </summary>
 public sealed class BehaviorNoteService : IBehaviorNoteService
 {
-    private readonly ApplicationDbContext _dbContext;
-    private readonly IAuditLogService _auditService;
-    private readonly ILogger<BehaviorNoteService> _logger;
-
     private const int MaxNoteLength = 4000;
+    private readonly IAuditLogService _auditService;
+    private readonly ApplicationDbContext _dbContext;
+    private readonly ILogger<BehaviorNoteService> _logger;
 
     public BehaviorNoteService(
         ApplicationDbContext dbContext,
@@ -39,22 +38,18 @@ public sealed class BehaviorNoteService : IBehaviorNoteService
         ArgumentNullException.ThrowIfNull(request);
 
         if (string.IsNullOrWhiteSpace(request.NoteText))
-        {
             return new BehaviorNoteOperationResponse
             {
                 Success = false,
                 Error = "Note text is required."
             };
-        }
 
         if (request.NoteText.Length > MaxNoteLength)
-        {
             return new BehaviorNoteOperationResponse
             {
                 Success = false,
                 Error = $"Note text must not exceed {MaxNoteLength} characters."
             };
-        }
 
         // Verify client exists
         var client = await _dbContext.Clients
@@ -62,13 +57,11 @@ public sealed class BehaviorNoteService : IBehaviorNoteService
             .FirstOrDefaultAsync(c => c.Id == clientId, cancellationToken);
 
         if (client is null)
-        {
             return new BehaviorNoteOperationResponse
             {
                 Success = false,
                 Error = "Client not found."
             };
-        }
 
         var note = new BehaviorNote
         {
@@ -121,15 +114,9 @@ public sealed class BehaviorNoteService : IBehaviorNoteService
             .Include(b => b.Caregiver)
             .Where(b => b.ClientId == clientId);
 
-        if (fromDate.HasValue)
-        {
-            query = query.Where(b => b.Timestamp >= fromDate.Value);
-        }
+        if (fromDate.HasValue) query = query.Where(b => b.Timestamp >= fromDate.Value);
 
-        if (toDate.HasValue)
-        {
-            query = query.Where(b => b.Timestamp <= toDate.Value);
-        }
+        if (toDate.HasValue) query = query.Where(b => b.Timestamp <= toDate.Value);
 
         var notes = await query
             .OrderByDescending(b => b.Timestamp)

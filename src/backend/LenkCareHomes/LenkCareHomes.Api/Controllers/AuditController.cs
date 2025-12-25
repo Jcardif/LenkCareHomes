@@ -1,4 +1,5 @@
 using System.Text;
+using LenkCareHomes.Api.Domain.Constants;
 using LenkCareHomes.Api.Domain.Entities;
 using LenkCareHomes.Api.Services.Audit;
 using Microsoft.AspNetCore.Authorization;
@@ -7,12 +8,12 @@ using Microsoft.AspNetCore.Mvc;
 namespace LenkCareHomes.Api.Controllers;
 
 /// <summary>
-/// Controller for audit log access (Admin and Sysadmin only).
-/// Provides comprehensive audit log viewing and filtering interface for HIPAA compliance.
+///     Controller for audit log access (Admin and Sysadmin only).
+///     Provides comprehensive audit log viewing and filtering interface for HIPAA compliance.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = $"{Domain.Constants.Roles.Admin},{Domain.Constants.Roles.Sysadmin}")]
+[Authorize(Roles = $"{Roles.Admin},{Roles.Sysadmin}")]
 public sealed class AuditController : ControllerBase
 {
     private readonly IAuditLogService _auditLogService;
@@ -27,8 +28,8 @@ public sealed class AuditController : ControllerBase
     }
 
     /// <summary>
-    /// Gets recent audit log entries with advanced filtering capabilities.
-    /// Supports filtering by user, action, date range, resource, outcome, and free text search.
+    ///     Gets recent audit log entries with advanced filtering capabilities.
+    ///     Supports filtering by user, action, date range, resource, outcome, and free text search.
     /// </summary>
     /// <param name="userId">Optional user ID filter.</param>
     /// <param name="action">Optional action type filter.</param>
@@ -59,10 +60,8 @@ public sealed class AuditController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         if (!_auditLogService.IsConfigured)
-        {
             return StatusCode(StatusCodes.Status503ServiceUnavailable,
                 new { error = "Audit log service is not configured." });
-        }
 
         var filter = new AuditLogQueryFilter
         {
@@ -88,8 +87,8 @@ public sealed class AuditController : ControllerBase
     }
 
     /// <summary>
-    /// Exports audit logs to CSV format for compliance audits.
-    /// Supports the same filtering options as the main endpoint.
+    ///     Exports audit logs to CSV format for compliance audits.
+    ///     Supports the same filtering options as the main endpoint.
     /// </summary>
     /// <param name="userId">Optional user ID filter.</param>
     /// <param name="action">Optional action type filter.</param>
@@ -118,10 +117,8 @@ public sealed class AuditController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         if (!_auditLogService.IsConfigured)
-        {
             return StatusCode(StatusCodes.Status503ServiceUnavailable,
                 new { error = "Audit log service is not configured." });
-        }
 
         maxRecords = Math.Min(Math.Max(maxRecords, 1), 50000);
 
@@ -155,10 +152,10 @@ public sealed class AuditController : ControllerBase
 
         // Build CSV content
         var csv = new StringBuilder();
-        csv.AppendLine("Timestamp,User Email,User ID,Action,Outcome,Resource Type,Resource ID,HTTP Method,Request Path,Status Code,IP Address,Details");
+        csv.AppendLine(
+            "Timestamp,User Email,User ID,Action,Outcome,Resource Type,Resource ID,HTTP Method,Request Path,Status Code,IP Address,Details");
 
         foreach (var entry in entries)
-        {
             csv.AppendLine(
                 $"\"{entry.Timestamp:yyyy-MM-dd HH:mm:ss}\"," +
                 $"\"{EscapeCsvField(entry.UserEmail)}\"," +
@@ -172,7 +169,6 @@ public sealed class AuditController : ControllerBase
                 $"\"{entry.StatusCode}\"," +
                 $"\"{EscapeCsvField(entry.IpAddress)}\"," +
                 $"\"{EscapeCsvField(entry.Details)}\"");
-        }
 
         var fileName = $"audit_logs_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv";
         var bytes = Encoding.UTF8.GetBytes(csv.ToString());
@@ -183,7 +179,7 @@ public sealed class AuditController : ControllerBase
     }
 
     /// <summary>
-    /// Gets available action types for filtering.
+    ///     Gets available action types for filtering.
     /// </summary>
     /// <returns>List of distinct action types.</returns>
     [HttpGet("actions")]
@@ -191,7 +187,7 @@ public sealed class AuditController : ControllerBase
     public IActionResult GetAvailableActions()
     {
         // Return all known audit actions from the constants
-        var actions = typeof(Domain.Constants.AuditActions)
+        var actions = typeof(AuditActions)
             .GetFields()
             .Where(f => f.IsLiteral && f.FieldType == typeof(string))
             .Select(f => f.GetValue(null)?.ToString())
@@ -203,7 +199,7 @@ public sealed class AuditController : ControllerBase
     }
 
     /// <summary>
-    /// Gets audit log statistics.
+    ///     Gets audit log statistics.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Audit log statistics.</returns>
@@ -213,10 +209,8 @@ public sealed class AuditController : ControllerBase
     public async Task<ActionResult<AuditLogStats>> GetAuditStatsAsync(CancellationToken cancellationToken)
     {
         if (!_auditLogService.IsConfigured)
-        {
             return StatusCode(StatusCodes.Status503ServiceUnavailable,
                 new { error = "Audit log service is not configured." });
-        }
 
         var since = DateTime.UtcNow.AddHours(-24);
         var actionCounts = await _auditLogService.GetStatsAsync(since, cancellationToken);
@@ -229,7 +223,7 @@ public sealed class AuditController : ControllerBase
     }
 
     /// <summary>
-    /// Escapes a field for CSV export.
+    ///     Escapes a field for CSV export.
     /// </summary>
     private static string EscapeCsvField(string? value)
     {
@@ -242,7 +236,7 @@ public sealed class AuditController : ControllerBase
 }
 
 /// <summary>
-/// Response model for audit log queries.
+///     Response model for audit log queries.
 /// </summary>
 public sealed record AuditLogResponse
 {
@@ -251,7 +245,7 @@ public sealed record AuditLogResponse
 }
 
 /// <summary>
-/// Audit log statistics.
+///     Audit log statistics.
 /// </summary>
 public sealed record AuditLogStats
 {

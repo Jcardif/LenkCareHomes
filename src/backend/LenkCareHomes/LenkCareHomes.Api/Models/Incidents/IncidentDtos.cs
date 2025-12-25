@@ -3,7 +3,7 @@ using LenkCareHomes.Api.Domain.Enums;
 namespace LenkCareHomes.Api.Models.Incidents;
 
 /// <summary>
-/// DTO for incident summary in list views.
+///     DTO for incident summary in list views.
 /// </summary>
 public sealed record IncidentSummaryDto
 {
@@ -22,7 +22,7 @@ public sealed record IncidentSummaryDto
 }
 
 /// <summary>
-/// DTO for full incident details.
+///     DTO for full incident details.
 /// </summary>
 public sealed record IncidentDto
 {
@@ -55,7 +55,7 @@ public sealed record IncidentDto
 }
 
 /// <summary>
-/// DTO for incident follow-up notes.
+///     DTO for incident follow-up notes.
 /// </summary>
 public sealed record IncidentFollowUpDto
 {
@@ -67,7 +67,7 @@ public sealed record IncidentFollowUpDto
 }
 
 /// <summary>
-/// DTO for incident photos.
+///     DTO for incident photos.
 /// </summary>
 public sealed record IncidentPhotoDto
 {
@@ -83,7 +83,7 @@ public sealed record IncidentPhotoDto
 }
 
 /// <summary>
-/// Request to initiate photo upload for an incident.
+///     Request to initiate photo upload for an incident.
 /// </summary>
 public sealed record UploadIncidentPhotoRequest
 {
@@ -94,7 +94,7 @@ public sealed record UploadIncidentPhotoRequest
 }
 
 /// <summary>
-/// Response from photo upload initiation.
+///     Response from photo upload initiation.
 /// </summary>
 public sealed record IncidentPhotoUploadResponse
 {
@@ -104,15 +104,20 @@ public sealed record IncidentPhotoUploadResponse
     public string? UploadUrl { get; init; }
     public DateTime? ExpiresAt { get; init; }
 
-    public static IncidentPhotoUploadResponse Ok(Guid photoId, string uploadUrl, DateTime expiresAt) =>
-        new() { Success = true, PhotoId = photoId, UploadUrl = uploadUrl, ExpiresAt = expiresAt };
+    public static IncidentPhotoUploadResponse Ok(Guid photoId, string uploadUrl, DateTime expiresAt)
+    {
+        return new IncidentPhotoUploadResponse
+            { Success = true, PhotoId = photoId, UploadUrl = uploadUrl, ExpiresAt = expiresAt };
+    }
 
-    public static IncidentPhotoUploadResponse Fail(string error) =>
-        new() { Success = false, Error = error };
+    public static IncidentPhotoUploadResponse Fail(string error)
+    {
+        return new IncidentPhotoUploadResponse { Success = false, Error = error };
+    }
 }
 
 /// <summary>
-/// Response from photo operations.
+///     Response from photo operations.
 /// </summary>
 public sealed record IncidentPhotoOperationResponse
 {
@@ -120,15 +125,19 @@ public sealed record IncidentPhotoOperationResponse
     public string? Error { get; init; }
     public IncidentPhotoDto? Photo { get; init; }
 
-    public static IncidentPhotoOperationResponse Ok(IncidentPhotoDto photo) =>
-        new() { Success = true, Photo = photo };
+    public static IncidentPhotoOperationResponse Ok(IncidentPhotoDto photo)
+    {
+        return new IncidentPhotoOperationResponse { Success = true, Photo = photo };
+    }
 
-    public static IncidentPhotoOperationResponse Fail(string error) =>
-        new() { Success = false, Error = error };
+    public static IncidentPhotoOperationResponse Fail(string error)
+    {
+        return new IncidentPhotoOperationResponse { Success = false, Error = error };
+    }
 }
 
 /// <summary>
-/// Response with photo URL for viewing.
+///     Response with photo URL for viewing.
 /// </summary>
 public sealed record IncidentPhotoViewResponse
 {
@@ -137,22 +146,27 @@ public sealed record IncidentPhotoViewResponse
     public string? Url { get; init; }
     public DateTime? ExpiresAt { get; init; }
 
-    public static IncidentPhotoViewResponse Ok(string url, DateTime expiresAt) =>
-        new() { Success = true, Url = url, ExpiresAt = expiresAt };
+    public static IncidentPhotoViewResponse Ok(string url, DateTime expiresAt)
+    {
+        return new IncidentPhotoViewResponse { Success = true, Url = url, ExpiresAt = expiresAt };
+    }
 
-    public static IncidentPhotoViewResponse Fail(string error) =>
-        new() { Success = false, Error = error };
+    public static IncidentPhotoViewResponse Fail(string error)
+    {
+        return new IncidentPhotoViewResponse { Success = false, Error = error };
+    }
 }
 
 /// <summary>
-/// Request to create a new incident report.
+///     Request to create a new incident report.
 /// </summary>
 public sealed record CreateIncidentRequest
 {
     /// <summary>
-    /// Optional client ID. If null, the incident is a home-level incident.
+    ///     Optional client ID. If null, the incident is a home-level incident.
     /// </summary>
     public Guid? ClientId { get; init; }
+
     public Guid HomeId { get; init; }
     public IncidentType IncidentType { get; init; }
     public int Severity { get; init; } = 3;
@@ -162,16 +176,16 @@ public sealed record CreateIncidentRequest
     public string? ActionsTaken { get; init; }
     public string? WitnessNames { get; init; }
     public string? NotifiedParties { get; init; }
-    
+
     /// <summary>
-    /// If true, the incident is submitted immediately (status = Submitted).
-    /// If false, it's saved as a draft (status = Draft).
+    ///     If true, the incident is submitted immediately (status = Submitted).
+    ///     If false, it's saved as a draft (status = Draft).
     /// </summary>
     public bool SubmitImmediately { get; init; }
 }
 
 /// <summary>
-/// Request to update an existing draft incident.
+///     Request to update an existing draft incident.
 /// </summary>
 public sealed record UpdateIncidentRequest
 {
@@ -186,7 +200,7 @@ public sealed record UpdateIncidentRequest
 }
 
 /// <summary>
-/// Request to update incident status.
+///     Request to update incident status.
 /// </summary>
 public sealed record UpdateIncidentStatusRequest
 {
@@ -195,7 +209,7 @@ public sealed record UpdateIncidentStatusRequest
 }
 
 /// <summary>
-/// Request to add a follow-up note to an incident.
+///     Request to add a follow-up note to an incident.
 /// </summary>
 public sealed record AddIncidentFollowUpRequest
 {
@@ -203,7 +217,7 @@ public sealed record AddIncidentFollowUpRequest
 }
 
 /// <summary>
-/// Response from incident operations.
+///     Response from incident operations.
 /// </summary>
 public sealed record IncidentOperationResponse
 {
@@ -211,15 +225,19 @@ public sealed record IncidentOperationResponse
     public string? Error { get; init; }
     public IncidentDto? Incident { get; init; }
 
-    public static IncidentOperationResponse Ok(IncidentDto incident) =>
-        new() { Success = true, Incident = incident };
+    public static IncidentOperationResponse Ok(IncidentDto incident)
+    {
+        return new IncidentOperationResponse { Success = true, Incident = incident };
+    }
 
-    public static IncidentOperationResponse Fail(string error) =>
-        new() { Success = false, Error = error };
+    public static IncidentOperationResponse Fail(string error)
+    {
+        return new IncidentOperationResponse { Success = false, Error = error };
+    }
 }
 
 /// <summary>
-/// Paged response for incidents list.
+///     Paged response for incidents list.
 /// </summary>
 public sealed record PagedIncidentResponse
 {

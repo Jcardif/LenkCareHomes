@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using LenkCareHomes.Api.Domain.Constants;
 using LenkCareHomes.Api.Models.Beds;
 using LenkCareHomes.Api.Models.Homes;
@@ -10,16 +11,16 @@ using Microsoft.AspNetCore.Mvc;
 namespace LenkCareHomes.Api.Controllers;
 
 /// <summary>
-/// Controller for home management operations.
+///     Controller for home management operations.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
 public sealed class HomesController : ControllerBase
 {
-    private readonly IHomeService _homeService;
     private readonly IBedService _bedService;
     private readonly ICaregiverService _caregiverService;
+    private readonly IHomeService _homeService;
     private readonly ILogger<HomesController> _logger;
 
     public HomesController(
@@ -35,8 +36,8 @@ public sealed class HomesController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all homes.
-    /// Caregivers only see homes they are assigned to.
+    ///     Gets all homes.
+    ///     Caregivers only see homes they are assigned to.
     /// </summary>
     /// <param name="includeInactive">Whether to include inactive homes.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -56,9 +57,8 @@ public sealed class HomesController : ControllerBase
         {
             var currentUserId = GetCurrentUserId();
             if (currentUserId is not null)
-            {
-                allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-            }
+                allowedHomeIds =
+                    await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
         }
 
         var homes = await _homeService.GetAllHomesAsync(includeInactive, allowedHomeIds, cancellationToken);
@@ -66,7 +66,7 @@ public sealed class HomesController : ControllerBase
     }
 
     /// <summary>
-    /// Gets a home by ID.
+    ///     Gets a home by ID.
     /// </summary>
     /// <param name="id">Home ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -80,16 +80,13 @@ public sealed class HomesController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var home = await _homeService.GetHomeByIdAsync(id, cancellationToken);
-        if (home is null)
-        {
-            return NotFound();
-        }
+        if (home is null) return NotFound();
 
         return Ok(home);
     }
 
     /// <summary>
-    /// Creates a new home.
+    ///     Creates a new home.
     /// </summary>
     /// <param name="request">Create home request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -103,10 +100,7 @@ public sealed class HomesController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _homeService.CreateHomeAsync(
             request,
@@ -114,10 +108,7 @@ public sealed class HomesController : ControllerBase
             GetClientIpAddress(),
             cancellationToken);
 
-        if (!response.Success)
-        {
-            return BadRequest(response);
-        }
+        if (!response.Success) return BadRequest(response);
 
         return CreatedAtAction(
             nameof(GetHomeByIdAsync),
@@ -126,7 +117,7 @@ public sealed class HomesController : ControllerBase
     }
 
     /// <summary>
-    /// Updates a home.
+    ///     Updates a home.
     /// </summary>
     /// <param name="id">Home ID.</param>
     /// <param name="request">Update home request.</param>
@@ -143,10 +134,7 @@ public sealed class HomesController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _homeService.UpdateHomeAsync(
             id,
@@ -157,10 +145,7 @@ public sealed class HomesController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Home not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Home not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -168,7 +153,7 @@ public sealed class HomesController : ControllerBase
     }
 
     /// <summary>
-    /// Deactivates a home.
+    ///     Deactivates a home.
     /// </summary>
     /// <param name="id">Home ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -183,10 +168,7 @@ public sealed class HomesController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _homeService.DeactivateHomeAsync(
             id,
@@ -196,10 +178,7 @@ public sealed class HomesController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Home not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Home not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -207,7 +186,7 @@ public sealed class HomesController : ControllerBase
     }
 
     /// <summary>
-    /// Reactivates a home.
+    ///     Reactivates a home.
     /// </summary>
     /// <param name="id">Home ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -221,10 +200,7 @@ public sealed class HomesController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _homeService.ReactivateHomeAsync(
             id,
@@ -234,10 +210,7 @@ public sealed class HomesController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Home not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Home not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -247,7 +220,7 @@ public sealed class HomesController : ControllerBase
     // ========== Bed Management Endpoints ==========
 
     /// <summary>
-    /// Gets all beds for a home.
+    ///     Gets all beds for a home.
     /// </summary>
     /// <param name="homeId">Home ID.</param>
     /// <param name="includeInactive">Whether to include inactive beds.</param>
@@ -266,7 +239,7 @@ public sealed class HomesController : ControllerBase
     }
 
     /// <summary>
-    /// Gets available beds for a home.
+    ///     Gets available beds for a home.
     /// </summary>
     /// <param name="homeId">Home ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -282,7 +255,7 @@ public sealed class HomesController : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new bed in a home.
+    ///     Creates a new bed in a home.
     /// </summary>
     /// <param name="homeId">Home ID.</param>
     /// <param name="request">Create bed request.</param>
@@ -298,10 +271,7 @@ public sealed class HomesController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _bedService.CreateBedAsync(
             homeId,
@@ -310,10 +280,7 @@ public sealed class HomesController : ControllerBase
             GetClientIpAddress(),
             cancellationToken);
 
-        if (!response.Success)
-        {
-            return BadRequest(response);
-        }
+        if (!response.Success) return BadRequest(response);
 
         return CreatedAtAction(
             nameof(GetBedsByHomeIdAsync),
@@ -324,21 +291,15 @@ public sealed class HomesController : ControllerBase
     private string? GetClientIpAddress()
     {
         var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-        if (!string.IsNullOrEmpty(forwardedFor))
-        {
-            return forwardedFor.Split(',').First().Trim();
-        }
+        if (!string.IsNullOrEmpty(forwardedFor)) return forwardedFor.Split(',').First().Trim();
 
         return HttpContext.Connection.RemoteIpAddress?.ToString();
     }
 
     private Guid? GetCurrentUserId()
     {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (Guid.TryParse(userIdClaim, out var userId))
-        {
-            return userId;
-        }
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(userIdClaim, out var userId)) return userId;
         return null;
     }
 }

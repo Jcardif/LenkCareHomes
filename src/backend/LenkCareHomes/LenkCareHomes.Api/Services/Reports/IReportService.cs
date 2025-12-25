@@ -3,12 +3,12 @@ using LenkCareHomes.Api.Models.Reports;
 namespace LenkCareHomes.Api.Services.Reports;
 
 /// <summary>
-/// Service interface for report generation.
+///     Service interface for report generation.
 /// </summary>
 public interface IReportService
 {
     /// <summary>
-    /// Generates a client summary report with all care data for the specified date range.
+    ///     Generates a client summary report with all care data for the specified date range.
     /// </summary>
     /// <param name="clientId">The client ID.</param>
     /// <param name="startDate">Start date of the report period.</param>
@@ -22,7 +22,7 @@ public interface IReportService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Generates a home summary report with client and incident data for the specified date range.
+    ///     Generates a home summary report with client and incident data for the specified date range.
     /// </summary>
     /// <param name="homeId">The home ID.</param>
     /// <param name="startDate">Start date of the report period.</param>
@@ -36,7 +36,7 @@ public interface IReportService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Checks if a client exists.
+    ///     Checks if a client exists.
     /// </summary>
     /// <param name="clientId">The client ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -44,7 +44,7 @@ public interface IReportService
     Task<bool> ClientExistsAsync(Guid clientId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Checks if a home exists.
+    ///     Checks if a home exists.
     /// </summary>
     /// <param name="homeId">The home ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -52,7 +52,7 @@ public interface IReportService
     Task<bool> HomeExistsAsync(Guid homeId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets the home ID for a client.
+    ///     Gets the home ID for a client.
     /// </summary>
     /// <param name="clientId">The client ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>

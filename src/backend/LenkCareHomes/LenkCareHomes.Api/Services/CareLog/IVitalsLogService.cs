@@ -3,12 +3,12 @@ using LenkCareHomes.Api.Models.CareLog;
 namespace LenkCareHomes.Api.Services.CareLog;
 
 /// <summary>
-/// Service interface for vitals log operations.
+///     Service interface for vitals log operations.
 /// </summary>
 public interface IVitalsLogService
 {
     /// <summary>
-    /// Creates a new vitals log entry.
+    ///     Creates a new vitals log entry.
     /// </summary>
     Task<VitalsLogOperationResponse> CreateVitalsLogAsync(
         Guid clientId,
@@ -18,7 +18,7 @@ public interface IVitalsLogService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets vitals logs for a client.
+    ///     Gets vitals logs for a client.
     /// </summary>
     Task<IReadOnlyList<VitalsLogDto>> GetVitalsLogsAsync(
         Guid clientId,
@@ -27,7 +27,7 @@ public interface IVitalsLogService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets a specific vitals log by ID.
+    ///     Gets a specific vitals log by ID.
     /// </summary>
     Task<VitalsLogDto?> GetVitalsLogByIdAsync(
         Guid clientId,

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using LenkCareHomes.Api.Domain.Constants;
 using LenkCareHomes.Api.Domain.Enums;
 using LenkCareHomes.Api.Models.Documents;
@@ -9,15 +10,15 @@ using Microsoft.AspNetCore.Mvc;
 namespace LenkCareHomes.Api.Controllers;
 
 /// <summary>
-/// Controller for document folder management operations.
+///     Controller for document folder management operations.
 /// </summary>
 [ApiController]
 [Route("api/folders")]
 [Authorize]
 public sealed class FoldersController : ControllerBase
 {
-    private readonly IFolderService _folderService;
     private readonly ICaregiverService _caregiverService;
+    private readonly IFolderService _folderService;
     private readonly ILogger<FoldersController> _logger;
 
     public FoldersController(
@@ -31,7 +32,7 @@ public sealed class FoldersController : ControllerBase
     }
 
     /// <summary>
-    /// Gets the folder tree for navigation.
+    ///     Gets the folder tree for navigation.
     /// </summary>
     [HttpGet("tree")]
     [ProducesResponseType(typeof(IReadOnlyList<FolderTreeNodeDto>), StatusCodes.Status200OK)]
@@ -42,19 +43,14 @@ public sealed class FoldersController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var isAdmin = User.IsInRole(Roles.Admin);
 
         // Get home scope for caregivers
         IReadOnlyList<Guid>? allowedHomeIds = null;
         if (!isAdmin && !User.IsInRole(Roles.Sysadmin))
-        {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-        }
 
         var tree = await _folderService.GetFolderTreeAsync(
             scope,
@@ -69,7 +65,7 @@ public sealed class FoldersController : ControllerBase
     }
 
     /// <summary>
-    /// Gets root-level folders with optional filtering.
+    ///     Gets root-level folders with optional filtering.
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<FolderSummaryDto>), StatusCodes.Status200OK)]
@@ -80,19 +76,14 @@ public sealed class FoldersController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var isAdmin = User.IsInRole(Roles.Admin);
 
         // Get home scope for caregivers
         IReadOnlyList<Guid>? allowedHomeIds = null;
         if (!isAdmin && !User.IsInRole(Roles.Sysadmin))
-        {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-        }
 
         var folders = await _folderService.GetRootFoldersAsync(
             scope,
@@ -107,7 +98,7 @@ public sealed class FoldersController : ControllerBase
     }
 
     /// <summary>
-    /// Gets a folder by ID with its contents.
+    ///     Gets a folder by ID with its contents.
     /// </summary>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(FolderDto), StatusCodes.Status200OK)]
@@ -117,19 +108,14 @@ public sealed class FoldersController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var isAdmin = User.IsInRole(Roles.Admin);
 
         // Get home scope for caregivers
         IReadOnlyList<Guid>? allowedHomeIds = null;
         if (!isAdmin && !User.IsInRole(Roles.Sysadmin))
-        {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-        }
 
         var folder = await _folderService.GetFolderByIdAsync(
             id,
@@ -138,17 +124,14 @@ public sealed class FoldersController : ControllerBase
             allowedHomeIds,
             cancellationToken);
 
-        if (folder is null)
-        {
-            return NotFound();
-        }
+        if (folder is null) return NotFound();
 
         return Ok(folder);
     }
 
     /// <summary>
-    /// Creates a new folder.
-    /// Admin only.
+    ///     Creates a new folder.
+    ///     Admin only.
     /// </summary>
     [HttpPost]
     [Authorize(Roles = Roles.Admin)]
@@ -159,10 +142,7 @@ public sealed class FoldersController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _folderService.CreateFolderAsync(
             request,
@@ -170,17 +150,14 @@ public sealed class FoldersController : ControllerBase
             GetClientIpAddress(),
             cancellationToken);
 
-        if (!response.Success)
-        {
-            return BadRequest(response);
-        }
+        if (!response.Success) return BadRequest(response);
 
         return Ok(response);
     }
 
     /// <summary>
-    /// Updates a folder.
-    /// Admin only.
+    ///     Updates a folder.
+    ///     Admin only.
     /// </summary>
     [HttpPut("{id:guid}")]
     [Authorize(Roles = Roles.Admin)]
@@ -193,10 +170,7 @@ public sealed class FoldersController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _folderService.UpdateFolderAsync(
             id,
@@ -207,10 +181,7 @@ public sealed class FoldersController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Folder not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Folder not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -218,8 +189,8 @@ public sealed class FoldersController : ControllerBase
     }
 
     /// <summary>
-    /// Moves a folder to a new parent.
-    /// Admin only.
+    ///     Moves a folder to a new parent.
+    ///     Admin only.
     /// </summary>
     [HttpPut("{id:guid}/move")]
     [Authorize(Roles = Roles.Admin)]
@@ -232,10 +203,7 @@ public sealed class FoldersController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _folderService.MoveFolderAsync(
             id,
@@ -246,10 +214,7 @@ public sealed class FoldersController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Folder not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Folder not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -257,8 +222,8 @@ public sealed class FoldersController : ControllerBase
     }
 
     /// <summary>
-    /// Deletes a folder.
-    /// Admin only.
+    ///     Deletes a folder.
+    ///     Admin only.
     /// </summary>
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = Roles.Admin)]
@@ -270,10 +235,7 @@ public sealed class FoldersController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _folderService.DeleteFolderAsync(
             id,
@@ -283,10 +245,7 @@ public sealed class FoldersController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Folder not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Folder not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -294,7 +253,7 @@ public sealed class FoldersController : ControllerBase
     }
 
     /// <summary>
-    /// Browse documents with folder/scope filtering.
+    ///     Browse documents with folder/scope filtering.
     /// </summary>
     [HttpGet("browse")]
     [ProducesResponseType(typeof(BrowseDocumentsResponse), StatusCodes.Status200OK)]
@@ -310,19 +269,14 @@ public sealed class FoldersController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var isAdmin = User.IsInRole(Roles.Admin);
 
         // Get home scope for caregivers
         IReadOnlyList<Guid>? allowedHomeIds = null;
         if (!isAdmin && !User.IsInRole(Roles.Sysadmin))
-        {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-        }
 
         var query = new BrowseDocumentsQuery
         {
@@ -349,21 +303,15 @@ public sealed class FoldersController : ControllerBase
     private string? GetClientIpAddress()
     {
         var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-        if (!string.IsNullOrEmpty(forwardedFor))
-        {
-            return forwardedFor.Split(',').First().Trim();
-        }
+        if (!string.IsNullOrEmpty(forwardedFor)) return forwardedFor.Split(',').First().Trim();
 
         return HttpContext.Connection.RemoteIpAddress?.ToString();
     }
 
     private Guid? GetCurrentUserId()
     {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (Guid.TryParse(userIdClaim, out var userId))
-        {
-            return userId;
-        }
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(userIdClaim, out var userId)) return userId;
         return null;
     }
 }

@@ -3,7 +3,7 @@ using LenkCareHomes.Api.Domain.Enums;
 namespace LenkCareHomes.Api.Models.Documents;
 
 /// <summary>
-/// DTO for document summary in list views.
+///     DTO for document summary in list views.
 /// </summary>
 public sealed record DocumentSummaryDto
 {
@@ -26,7 +26,7 @@ public sealed record DocumentSummaryDto
 }
 
 /// <summary>
-/// DTO for full document details.
+///     DTO for full document details.
 /// </summary>
 public sealed record DocumentDto
 {
@@ -52,7 +52,7 @@ public sealed record DocumentDto
 }
 
 /// <summary>
-/// DTO for document access permission.
+///     DTO for document access permission.
 /// </summary>
 public sealed record DocumentPermissionDto
 {
@@ -66,7 +66,7 @@ public sealed record DocumentPermissionDto
 }
 
 /// <summary>
-/// Request to upload a document.
+///     Request to upload a document.
 /// </summary>
 public sealed record UploadDocumentRequest
 {
@@ -82,7 +82,7 @@ public sealed record UploadDocumentRequest
 }
 
 /// <summary>
-/// Response containing upload SAS URL.
+///     Response containing upload SAS URL.
 /// </summary>
 public sealed record DocumentUploadResponse
 {
@@ -92,15 +92,20 @@ public sealed record DocumentUploadResponse
     public string? UploadUrl { get; init; }
     public DateTime? ExpiresAt { get; init; }
 
-    public static DocumentUploadResponse Ok(Guid documentId, string uploadUrl, DateTime expiresAt) =>
-        new() { Success = true, DocumentId = documentId, UploadUrl = uploadUrl, ExpiresAt = expiresAt };
+    public static DocumentUploadResponse Ok(Guid documentId, string uploadUrl, DateTime expiresAt)
+    {
+        return new DocumentUploadResponse
+            { Success = true, DocumentId = documentId, UploadUrl = uploadUrl, ExpiresAt = expiresAt };
+    }
 
-    public static DocumentUploadResponse Fail(string error) =>
-        new() { Success = false, Error = error };
+    public static DocumentUploadResponse Fail(string error)
+    {
+        return new DocumentUploadResponse { Success = false, Error = error };
+    }
 }
 
 /// <summary>
-/// Response containing view SAS URL.
+///     Response containing view SAS URL.
 /// </summary>
 public sealed record DocumentViewResponse
 {
@@ -111,15 +116,22 @@ public sealed record DocumentViewResponse
     public string? ContentType { get; init; }
     public DateTime? ExpiresAt { get; init; }
 
-    public static DocumentViewResponse Ok(string viewUrl, string fileName, string contentType, DateTime expiresAt) =>
-        new() { Success = true, ViewUrl = viewUrl, FileName = fileName, ContentType = contentType, ExpiresAt = expiresAt };
+    public static DocumentViewResponse Ok(string viewUrl, string fileName, string contentType, DateTime expiresAt)
+    {
+        return new DocumentViewResponse
+        {
+            Success = true, ViewUrl = viewUrl, FileName = fileName, ContentType = contentType, ExpiresAt = expiresAt
+        };
+    }
 
-    public static DocumentViewResponse Fail(string error) =>
-        new() { Success = false, Error = error };
+    public static DocumentViewResponse Fail(string error)
+    {
+        return new DocumentViewResponse { Success = false, Error = error };
+    }
 }
 
 /// <summary>
-/// Request to grant document access to caregivers.
+///     Request to grant document access to caregivers.
 /// </summary>
 public sealed record GrantDocumentAccessRequest
 {
@@ -127,7 +139,7 @@ public sealed record GrantDocumentAccessRequest
 }
 
 /// <summary>
-/// DTO for document access history entry.
+///     DTO for document access history entry.
 /// </summary>
 public sealed record DocumentAccessHistoryDto
 {
@@ -143,7 +155,7 @@ public sealed record DocumentAccessHistoryDto
 }
 
 /// <summary>
-/// Response from document operations.
+///     Response from document operations.
 /// </summary>
 public sealed record DocumentOperationResponse
 {
@@ -151,9 +163,13 @@ public sealed record DocumentOperationResponse
     public string? Error { get; init; }
     public DocumentDto? Document { get; init; }
 
-    public static DocumentOperationResponse Ok(DocumentDto? document = null) =>
-        new() { Success = true, Document = document };
+    public static DocumentOperationResponse Ok(DocumentDto? document = null)
+    {
+        return new DocumentOperationResponse { Success = true, Document = document };
+    }
 
-    public static DocumentOperationResponse Fail(string error) =>
-        new() { Success = false, Error = error };
+    public static DocumentOperationResponse Fail(string error)
+    {
+        return new DocumentOperationResponse { Success = false, Error = error };
+    }
 }

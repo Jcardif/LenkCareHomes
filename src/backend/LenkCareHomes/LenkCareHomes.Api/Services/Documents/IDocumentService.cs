@@ -1,15 +1,14 @@
-using LenkCareHomes.Api.Domain.Enums;
 using LenkCareHomes.Api.Models.Documents;
 
 namespace LenkCareHomes.Api.Services.Documents;
 
 /// <summary>
-/// Service interface for document management operations.
+///     Service interface for document management operations.
 /// </summary>
 public interface IDocumentService
 {
     /// <summary>
-    /// Initiates a document upload for a client and returns a SAS URL for uploading.
+    ///     Initiates a document upload for a client and returns a SAS URL for uploading.
     /// </summary>
     Task<DocumentUploadResponse> InitiateUploadAsync(
         Guid clientId,
@@ -19,7 +18,7 @@ public interface IDocumentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Initiates a general document upload (any scope) and returns a SAS URL for uploading.
+    ///     Initiates a general document upload (any scope) and returns a SAS URL for uploading.
     /// </summary>
     Task<DocumentUploadResponse> InitiateGeneralUploadAsync(
         UploadDocumentRequest request,
@@ -28,7 +27,7 @@ public interface IDocumentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Confirms that an upload was completed.
+    ///     Confirms that an upload was completed.
     /// </summary>
     Task<DocumentOperationResponse> ConfirmUploadAsync(
         Guid documentId,
@@ -37,7 +36,7 @@ public interface IDocumentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets documents for a client.
+    ///     Gets documents for a client.
     /// </summary>
     Task<IReadOnlyList<DocumentSummaryDto>> GetDocumentsByClientAsync(
         Guid clientId,
@@ -47,7 +46,7 @@ public interface IDocumentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets a document by ID.
+    ///     Gets a document by ID.
     /// </summary>
     Task<DocumentDto?> GetDocumentByIdAsync(
         Guid documentId,
@@ -57,7 +56,7 @@ public interface IDocumentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets a SAS URL for viewing a document.
+    ///     Gets a SAS URL for viewing a document.
     /// </summary>
     Task<DocumentViewResponse> GetViewSasUrlAsync(
         Guid documentId,
@@ -68,7 +67,7 @@ public interface IDocumentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deletes a document (Admin only).
+    ///     Deletes a document (Admin only).
     /// </summary>
     Task<DocumentOperationResponse> DeleteDocumentAsync(
         Guid documentId,
@@ -77,7 +76,7 @@ public interface IDocumentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Grants document access to caregivers.
+    ///     Grants document access to caregivers.
     /// </summary>
     Task<DocumentOperationResponse> GrantAccessAsync(
         Guid documentId,
@@ -87,7 +86,7 @@ public interface IDocumentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Revokes document access from a caregiver.
+    ///     Revokes document access from a caregiver.
     /// </summary>
     Task<DocumentOperationResponse> RevokeAccessAsync(
         Guid documentId,
@@ -97,7 +96,7 @@ public interface IDocumentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets the access history for a document (grants and revocations).
+    ///     Gets the access history for a document (grants and revocations).
     /// </summary>
     Task<IReadOnlyList<DocumentAccessHistoryDto>> GetAccessHistoryAsync(
         Guid documentId,

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using LenkCareHomes.Api.Domain.Constants;
 using LenkCareHomes.Api.Models.Documents;
 using LenkCareHomes.Api.Services.Caregivers;
@@ -8,15 +9,15 @@ using Microsoft.AspNetCore.Mvc;
 namespace LenkCareHomes.Api.Controllers;
 
 /// <summary>
-/// Controller for document management operations.
+///     Controller for document management operations.
 /// </summary>
 [ApiController]
 [Route("api")]
 [Authorize]
 public sealed class DocumentsController : ControllerBase
 {
-    private readonly IDocumentService _documentService;
     private readonly ICaregiverService _caregiverService;
+    private readonly IDocumentService _documentService;
     private readonly ILogger<DocumentsController> _logger;
 
     public DocumentsController(
@@ -30,8 +31,8 @@ public sealed class DocumentsController : ControllerBase
     }
 
     /// <summary>
-    /// Initiates a document upload for a client.
-    /// Admin only.
+    ///     Initiates a document upload for a client.
+    ///     Admin only.
     /// </summary>
     [HttpPost("clients/{clientId:guid}/documents")]
     [Authorize(Roles = Roles.Admin)]
@@ -43,10 +44,7 @@ public sealed class DocumentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _documentService.InitiateUploadAsync(
             clientId,
@@ -55,17 +53,14 @@ public sealed class DocumentsController : ControllerBase
             GetClientIpAddress(),
             cancellationToken);
 
-        if (!response.Success)
-        {
-            return BadRequest(response);
-        }
+        if (!response.Success) return BadRequest(response);
 
         return Ok(response);
     }
 
     /// <summary>
-    /// Initiates a document upload for any scope (client, home, business, or general).
-    /// Admin only.
+    ///     Initiates a document upload for any scope (client, home, business, or general).
+    ///     Admin only.
     /// </summary>
     [HttpPost("documents/upload")]
     [Authorize(Roles = Roles.Admin)]
@@ -76,10 +71,7 @@ public sealed class DocumentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _documentService.InitiateGeneralUploadAsync(
             request,
@@ -87,17 +79,14 @@ public sealed class DocumentsController : ControllerBase
             GetClientIpAddress(),
             cancellationToken);
 
-        if (!response.Success)
-        {
-            return BadRequest(response);
-        }
+        if (!response.Success) return BadRequest(response);
 
         return Ok(response);
     }
 
     /// <summary>
-    /// Confirms that a document upload has completed.
-    /// Admin only.
+    ///     Confirms that a document upload has completed.
+    ///     Admin only.
     /// </summary>
     [HttpPost("documents/{id:guid}/confirm")]
     [Authorize(Roles = Roles.Admin)]
@@ -109,10 +98,7 @@ public sealed class DocumentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _documentService.ConfirmUploadAsync(
             id,
@@ -122,10 +108,7 @@ public sealed class DocumentsController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Document not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Document not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -133,8 +116,8 @@ public sealed class DocumentsController : ControllerBase
     }
 
     /// <summary>
-    /// Gets documents for a client.
-    /// Caregivers only see documents they have permission to access.
+    ///     Gets documents for a client.
+    ///     Caregivers only see documents they have permission to access.
     /// </summary>
     [HttpGet("clients/{clientId:guid}/documents")]
     [ProducesResponseType(typeof(IReadOnlyList<DocumentSummaryDto>), StatusCodes.Status200OK)]
@@ -143,10 +126,7 @@ public sealed class DocumentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var isAdmin = User.IsInRole(Roles.Admin);
 
@@ -155,10 +135,7 @@ public sealed class DocumentsController : ControllerBase
         if (!isAdmin && !User.IsInRole(Roles.Sysadmin))
         {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-            if (allowedHomeIds.Count == 0)
-            {
-                return Ok(Array.Empty<DocumentSummaryDto>());
-            }
+            if (allowedHomeIds.Count == 0) return Ok(Array.Empty<DocumentSummaryDto>());
         }
 
         var documents = await _documentService.GetDocumentsByClientAsync(
@@ -172,7 +149,7 @@ public sealed class DocumentsController : ControllerBase
     }
 
     /// <summary>
-    /// Gets a document by ID.
+    ///     Gets a document by ID.
     /// </summary>
     [HttpGet("documents/{id:guid}")]
     [ActionName(nameof(GetDocumentByIdAsync))]
@@ -184,19 +161,14 @@ public sealed class DocumentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var isAdmin = User.IsInRole(Roles.Admin);
 
         // Get home scope for caregivers
         IReadOnlyList<Guid>? allowedHomeIds = null;
         if (!isAdmin && !User.IsInRole(Roles.Sysadmin))
-        {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-        }
 
         var document = await _documentService.GetDocumentByIdAsync(
             id,
@@ -208,11 +180,9 @@ public sealed class DocumentsController : ControllerBase
         if (document is null)
         {
             // Check if document exists but user doesn't have access
-            var existsButDenied = await _documentService.GetDocumentByIdAsync(id, currentUserId.Value, true, null, cancellationToken);
-            if (existsButDenied is not null)
-            {
-                return Forbid();
-            }
+            var existsButDenied =
+                await _documentService.GetDocumentByIdAsync(id, currentUserId.Value, true, null, cancellationToken);
+            if (existsButDenied is not null) return Forbid();
             return NotFound();
         }
 
@@ -220,8 +190,8 @@ public sealed class DocumentsController : ControllerBase
     }
 
     /// <summary>
-    /// Gets a SAS URL for viewing a document.
-    /// Validates permissions before generating URL.
+    ///     Gets a SAS URL for viewing a document.
+    ///     Validates permissions before generating URL.
     /// </summary>
     [HttpGet("documents/{id:guid}/sas")]
     [ProducesResponseType(typeof(DocumentViewResponse), StatusCodes.Status200OK)]
@@ -232,19 +202,14 @@ public sealed class DocumentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var isAdmin = User.IsInRole(Roles.Admin);
 
         // Get home scope for caregivers
         IReadOnlyList<Guid>? allowedHomeIds = null;
         if (!isAdmin && !User.IsInRole(Roles.Sysadmin))
-        {
             allowedHomeIds = await _caregiverService.GetAssignedHomeIdsAsync(currentUserId.Value, cancellationToken);
-        }
 
         var response = await _documentService.GetViewSasUrlAsync(
             id,
@@ -256,14 +221,9 @@ public sealed class DocumentsController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Document not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Document not found.") return NotFound();
             if (response.Error?.Contains("permission") == true || response.Error?.Contains("denied") == true)
-            {
                 return Forbid();
-            }
             return BadRequest(response);
         }
 
@@ -271,8 +231,8 @@ public sealed class DocumentsController : ControllerBase
     }
 
     /// <summary>
-    /// Deletes a document.
-    /// Admin only.
+    ///     Deletes a document.
+    ///     Admin only.
     /// </summary>
     [HttpDelete("documents/{id:guid}")]
     [Authorize(Roles = Roles.Admin)]
@@ -284,10 +244,7 @@ public sealed class DocumentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _documentService.DeleteDocumentAsync(
             id,
@@ -297,10 +254,7 @@ public sealed class DocumentsController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Document not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Document not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -308,8 +262,8 @@ public sealed class DocumentsController : ControllerBase
     }
 
     /// <summary>
-    /// Grants document access to caregivers.
-    /// Admin only.
+    ///     Grants document access to caregivers.
+    ///     Admin only.
     /// </summary>
     [HttpPost("documents/{id:guid}/permissions")]
     [Authorize(Roles = Roles.Admin)]
@@ -322,10 +276,7 @@ public sealed class DocumentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _documentService.GrantAccessAsync(
             id,
@@ -336,10 +287,7 @@ public sealed class DocumentsController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Document not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Document not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -347,8 +295,8 @@ public sealed class DocumentsController : ControllerBase
     }
 
     /// <summary>
-    /// Revokes document access from a caregiver.
-    /// Admin only.
+    ///     Revokes document access from a caregiver.
+    ///     Admin only.
     /// </summary>
     [HttpDelete("documents/{id:guid}/permissions/{caregiverId:guid}")]
     [Authorize(Roles = Roles.Admin)]
@@ -361,10 +309,7 @@ public sealed class DocumentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var response = await _documentService.RevokeAccessAsync(
             id,
@@ -375,10 +320,7 @@ public sealed class DocumentsController : ControllerBase
 
         if (!response.Success)
         {
-            if (response.Error == "Permission not found.")
-            {
-                return NotFound();
-            }
+            if (response.Error == "Permission not found.") return NotFound();
             return BadRequest(response);
         }
 
@@ -386,8 +328,8 @@ public sealed class DocumentsController : ControllerBase
     }
 
     /// <summary>
-    /// Gets the access history for a document.
-    /// Admin only.
+    ///     Gets the access history for a document.
+    ///     Admin only.
     /// </summary>
     [HttpGet("documents/{id:guid}/history")]
     [Authorize(Roles = Roles.Admin)]
@@ -403,21 +345,15 @@ public sealed class DocumentsController : ControllerBase
     private string? GetClientIpAddress()
     {
         var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-        if (!string.IsNullOrEmpty(forwardedFor))
-        {
-            return forwardedFor.Split(',').First().Trim();
-        }
+        if (!string.IsNullOrEmpty(forwardedFor)) return forwardedFor.Split(',').First().Trim();
 
         return HttpContext.Connection.RemoteIpAddress?.ToString();
     }
 
     private Guid? GetCurrentUserId()
     {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (Guid.TryParse(userIdClaim, out var userId))
-        {
-            return userId;
-        }
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(userIdClaim, out var userId)) return userId;
         return null;
     }
 }

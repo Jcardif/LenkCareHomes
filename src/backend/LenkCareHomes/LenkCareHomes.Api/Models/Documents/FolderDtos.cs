@@ -5,7 +5,7 @@ namespace LenkCareHomes.Api.Models.Documents;
 // ========== Folder DTOs ==========
 
 /// <summary>
-/// DTO for folder summary in list views and tree navigation.
+///     DTO for folder summary in list views and tree navigation.
 /// </summary>
 public sealed record FolderSummaryDto
 {
@@ -24,7 +24,7 @@ public sealed record FolderSummaryDto
 }
 
 /// <summary>
-/// DTO for full folder details including children.
+///     DTO for full folder details including children.
 /// </summary>
 public sealed record FolderDto
 {
@@ -49,7 +49,7 @@ public sealed record FolderDto
 }
 
 /// <summary>
-/// Breadcrumb item for folder navigation.
+///     Breadcrumb item for folder navigation.
 /// </summary>
 public sealed record BreadcrumbItem
 {
@@ -58,7 +58,7 @@ public sealed record BreadcrumbItem
 }
 
 /// <summary>
-/// Folder tree node for hierarchical display.
+///     Folder tree node for hierarchical display.
 /// </summary>
 public sealed record FolderTreeNodeDto
 {
@@ -78,7 +78,7 @@ public sealed record FolderTreeNodeDto
 // ========== Request DTOs ==========
 
 /// <summary>
-/// Request to create a new folder.
+///     Request to create a new folder.
 /// </summary>
 public sealed record CreateFolderRequest
 {
@@ -90,7 +90,7 @@ public sealed record CreateFolderRequest
 }
 
 /// <summary>
-/// Request to update a folder.
+///     Request to update a folder.
 /// </summary>
 public sealed record UpdateFolderRequest
 {
@@ -98,7 +98,7 @@ public sealed record UpdateFolderRequest
 }
 
 /// <summary>
-/// Request to move a folder to a new parent.
+///     Request to move a folder to a new parent.
 /// </summary>
 public sealed record MoveFolderRequest
 {
@@ -106,7 +106,7 @@ public sealed record MoveFolderRequest
 }
 
 /// <summary>
-/// Response from folder operations.
+///     Response from folder operations.
 /// </summary>
 public sealed record FolderOperationResponse
 {
@@ -114,17 +114,21 @@ public sealed record FolderOperationResponse
     public string? Error { get; init; }
     public FolderDto? Folder { get; init; }
 
-    public static FolderOperationResponse Ok(FolderDto? folder = null) =>
-        new() { Success = true, Folder = folder };
+    public static FolderOperationResponse Ok(FolderDto? folder = null)
+    {
+        return new FolderOperationResponse { Success = true, Folder = folder };
+    }
 
-    public static FolderOperationResponse Fail(string error) =>
-        new() { Success = false, Error = error };
+    public static FolderOperationResponse Fail(string error)
+    {
+        return new FolderOperationResponse { Success = false, Error = error };
+    }
 }
 
 // ========== Query Parameters ==========
 
 /// <summary>
-/// Query parameters for browsing documents.
+///     Query parameters for browsing documents.
 /// </summary>
 public sealed record BrowseDocumentsQuery
 {
@@ -139,7 +143,7 @@ public sealed record BrowseDocumentsQuery
 }
 
 /// <summary>
-/// Response for browsing documents with folder context.
+///     Response for browsing documents with folder context.
 /// </summary>
 public sealed record BrowseDocumentsResponse
 {

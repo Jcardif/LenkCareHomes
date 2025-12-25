@@ -1,12 +1,13 @@
 using LenkCareHomes.Api.Data;
 using LenkCareHomes.Api.Domain.Entities;
+using LenkCareHomes.Api.Domain.Enums;
 using LenkCareHomes.Api.Models.CareLog;
 using Microsoft.EntityFrameworkCore;
 
 namespace LenkCareHomes.Api.Services.CareLog;
 
 /// <summary>
-/// Service implementation for client care timeline operations.
+///     Service implementation for client care timeline operations.
 /// </summary>
 public sealed class TimelineService : ITimelineService
 {
@@ -40,42 +41,48 @@ public sealed class TimelineService : ITimelineService
         // Fetch ADL logs
         if (includeAll || entryTypesSet.Contains(TimelineEntryTypes.ADL))
         {
-            var adlEntries = await GetADLEntriesAsync(clientId, queryParams.FromDate, queryParams.ToDate, cancellationToken);
+            var adlEntries =
+                await GetADLEntriesAsync(clientId, queryParams.FromDate, queryParams.ToDate, cancellationToken);
             entries.AddRange(adlEntries);
         }
 
         // Fetch Vitals logs
         if (includeAll || entryTypesSet.Contains(TimelineEntryTypes.Vitals))
         {
-            var vitalsEntries = await GetVitalsEntriesAsync(clientId, queryParams.FromDate, queryParams.ToDate, cancellationToken);
+            var vitalsEntries =
+                await GetVitalsEntriesAsync(clientId, queryParams.FromDate, queryParams.ToDate, cancellationToken);
             entries.AddRange(vitalsEntries);
         }
 
         // Fetch Medication logs
         if (includeAll || entryTypesSet.Contains(TimelineEntryTypes.Medication))
         {
-            var medicationEntries = await GetMedicationEntriesAsync(clientId, queryParams.FromDate, queryParams.ToDate, cancellationToken);
+            var medicationEntries = await GetMedicationEntriesAsync(clientId, queryParams.FromDate, queryParams.ToDate,
+                cancellationToken);
             entries.AddRange(medicationEntries);
         }
 
         // Fetch ROM logs
         if (includeAll || entryTypesSet.Contains(TimelineEntryTypes.ROM))
         {
-            var romEntries = await GetROMEntriesAsync(clientId, queryParams.FromDate, queryParams.ToDate, cancellationToken);
+            var romEntries =
+                await GetROMEntriesAsync(clientId, queryParams.FromDate, queryParams.ToDate, cancellationToken);
             entries.AddRange(romEntries);
         }
 
         // Fetch Behavior notes
         if (includeAll || entryTypesSet.Contains(TimelineEntryTypes.BehaviorNote))
         {
-            var behaviorEntries = await GetBehaviorEntriesAsync(clientId, queryParams.FromDate, queryParams.ToDate, cancellationToken);
+            var behaviorEntries =
+                await GetBehaviorEntriesAsync(clientId, queryParams.FromDate, queryParams.ToDate, cancellationToken);
             entries.AddRange(behaviorEntries);
         }
 
         // Fetch Activities
         if (includeAll || entryTypesSet.Contains(TimelineEntryTypes.Activity))
         {
-            var activityEntries = await GetActivityEntriesAsync(clientId, queryParams.FromDate, queryParams.ToDate, cancellationToken);
+            var activityEntries =
+                await GetActivityEntriesAsync(clientId, queryParams.FromDate, queryParams.ToDate, cancellationToken);
             entries.AddRange(activityEntries);
         }
 
@@ -115,15 +122,9 @@ public sealed class TimelineService : ITimelineService
             .Include(a => a.Caregiver)
             .Where(a => a.ClientId == clientId);
 
-        if (fromDate.HasValue)
-        {
-            query = query.Where(a => a.Timestamp >= fromDate.Value);
-        }
+        if (fromDate.HasValue) query = query.Where(a => a.Timestamp >= fromDate.Value);
 
-        if (toDate.HasValue)
-        {
-            query = query.Where(a => a.Timestamp <= toDate.Value);
-        }
+        if (toDate.HasValue) query = query.Where(a => a.Timestamp <= toDate.Value);
 
         var logs = await query.ToListAsync(cancellationToken);
 
@@ -161,15 +162,9 @@ public sealed class TimelineService : ITimelineService
             .Include(v => v.Caregiver)
             .Where(v => v.ClientId == clientId);
 
-        if (fromDate.HasValue)
-        {
-            query = query.Where(v => v.Timestamp >= fromDate.Value);
-        }
+        if (fromDate.HasValue) query = query.Where(v => v.Timestamp >= fromDate.Value);
 
-        if (toDate.HasValue)
-        {
-            query = query.Where(v => v.Timestamp <= toDate.Value);
-        }
+        if (toDate.HasValue) query = query.Where(v => v.Timestamp <= toDate.Value);
 
         var logs = await query.ToListAsync(cancellationToken);
 
@@ -185,7 +180,7 @@ public sealed class TimelineService : ITimelineService
             {
                 l.SystolicBP,
                 l.DiastolicBP,
-                BloodPressure = l.BloodPressure,
+                l.BloodPressure,
                 l.Pulse,
                 l.Temperature,
                 l.TemperatureUnit,
@@ -207,15 +202,9 @@ public sealed class TimelineService : ITimelineService
             .Include(m => m.Caregiver)
             .Where(m => m.ClientId == clientId);
 
-        if (fromDate.HasValue)
-        {
-            query = query.Where(m => m.Timestamp >= fromDate.Value);
-        }
+        if (fromDate.HasValue) query = query.Where(m => m.Timestamp >= fromDate.Value);
 
-        if (toDate.HasValue)
-        {
-            query = query.Where(m => m.Timestamp <= toDate.Value);
-        }
+        if (toDate.HasValue) query = query.Where(m => m.Timestamp <= toDate.Value);
 
         var logs = await query.ToListAsync(cancellationToken);
 
@@ -254,15 +243,9 @@ public sealed class TimelineService : ITimelineService
             .Include(r => r.Caregiver)
             .Where(r => r.ClientId == clientId);
 
-        if (fromDate.HasValue)
-        {
-            query = query.Where(r => r.Timestamp >= fromDate.Value);
-        }
+        if (fromDate.HasValue) query = query.Where(r => r.Timestamp >= fromDate.Value);
 
-        if (toDate.HasValue)
-        {
-            query = query.Where(r => r.Timestamp <= toDate.Value);
-        }
+        if (toDate.HasValue) query = query.Where(r => r.Timestamp <= toDate.Value);
 
         var logs = await query.ToListAsync(cancellationToken);
 
@@ -274,8 +257,8 @@ public sealed class TimelineService : ITimelineService
             CaregiverId = l.CaregiverId,
             CaregiverName = GetCaregiverName(l.Caregiver),
             Summary = $"{l.ActivityDescription}" +
-                (l.Duration.HasValue ? $" ({l.Duration}min)" : "") +
-                (l.Repetitions.HasValue ? $" ({l.Repetitions} reps)" : ""),
+                      (l.Duration.HasValue ? $" ({l.Duration}min)" : "") +
+                      (l.Repetitions.HasValue ? $" ({l.Repetitions} reps)" : ""),
             Details = new
             {
                 l.ActivityDescription,
@@ -298,15 +281,9 @@ public sealed class TimelineService : ITimelineService
             .Include(b => b.Caregiver)
             .Where(b => b.ClientId == clientId);
 
-        if (fromDate.HasValue)
-        {
-            query = query.Where(b => b.Timestamp >= fromDate.Value);
-        }
+        if (fromDate.HasValue) query = query.Where(b => b.Timestamp >= fromDate.Value);
 
-        if (toDate.HasValue)
-        {
-            query = query.Where(b => b.Timestamp <= toDate.Value);
-        }
+        if (toDate.HasValue) query = query.Where(b => b.Timestamp <= toDate.Value);
 
         var notes = await query.ToListAsync(cancellationToken);
 
@@ -340,18 +317,12 @@ public sealed class TimelineService : ITimelineService
             .AsNoTracking()
             .Include(a => a.CreatedBy)
             .Include(a => a.Participants)
-                .ThenInclude(p => p.Client)
+            .ThenInclude(p => p.Client)
             .Where(a => a.Participants.Any(p => p.ClientId == clientId));
 
-        if (fromDate.HasValue)
-        {
-            query = query.Where(a => a.Date >= fromDate.Value);
-        }
+        if (fromDate.HasValue) query = query.Where(a => a.Date >= fromDate.Value);
 
-        if (toDate.HasValue)
-        {
-            query = query.Where(a => a.Date <= toDate.Value);
-        }
+        if (toDate.HasValue) query = query.Where(a => a.Date <= toDate.Value);
 
         var activities = await query.ToListAsync(cancellationToken);
 
@@ -400,10 +371,7 @@ public sealed class TimelineService : ITimelineService
         if (log.Feeding.HasValue) parts.Add($"Feeding: {log.Feeding}");
 
         var summary = string.Join(", ", parts.Take(3));
-        if (parts.Count > 3)
-        {
-            summary += $" (+{parts.Count - 3} more)";
-        }
+        if (parts.Count > 3) summary += $" (+{parts.Count - 3} more)";
 
         return $"Katz Score: {log.CalculateKatzScore()} - {summary}";
     }
@@ -412,26 +380,17 @@ public sealed class TimelineService : ITimelineService
     {
         var parts = new List<string>();
 
-        if (log.SystolicBP.HasValue && log.DiastolicBP.HasValue)
-        {
-            parts.Add($"BP: {log.BloodPressure}");
-        }
+        if (log.SystolicBP.HasValue && log.DiastolicBP.HasValue) parts.Add($"BP: {log.BloodPressure}");
 
-        if (log.Pulse.HasValue)
-        {
-            parts.Add($"Pulse: {log.Pulse}");
-        }
+        if (log.Pulse.HasValue) parts.Add($"Pulse: {log.Pulse}");
 
         if (log.Temperature.HasValue)
         {
-            var unit = log.TemperatureUnit == Domain.Enums.TemperatureUnit.Fahrenheit ? "°F" : "°C";
+            var unit = log.TemperatureUnit == TemperatureUnit.Fahrenheit ? "°F" : "°C";
             parts.Add($"Temp: {log.Temperature}{unit}");
         }
 
-        if (log.OxygenSaturation.HasValue)
-        {
-            parts.Add($"O2: {log.OxygenSaturation}%");
-        }
+        if (log.OxygenSaturation.HasValue) parts.Add($"O2: {log.OxygenSaturation}%");
 
         return string.Join(", ", parts);
     }
@@ -440,12 +399,12 @@ public sealed class TimelineService : ITimelineService
     {
         var statusText = log.Status switch
         {
-            Domain.Enums.MedicationStatus.Administered => "✓",
-            Domain.Enums.MedicationStatus.Refused => "(Refused)",
-            Domain.Enums.MedicationStatus.NotAvailable => "(Not Available)",
-            Domain.Enums.MedicationStatus.Held => "(Held)",
-            Domain.Enums.MedicationStatus.GivenEarly => "(Given Early)",
-            Domain.Enums.MedicationStatus.GivenLate => "(Given Late)",
+            MedicationStatus.Administered => "✓",
+            MedicationStatus.Refused => "(Refused)",
+            MedicationStatus.NotAvailable => "(Not Available)",
+            MedicationStatus.Held => "(Held)",
+            MedicationStatus.GivenEarly => "(Given Early)",
+            MedicationStatus.GivenLate => "(Given Late)",
             _ => ""
         };
 
@@ -464,10 +423,7 @@ public sealed class TimelineService : ITimelineService
 
     private static string TruncateText(string text, int maxLength)
     {
-        if (text.Length <= maxLength)
-        {
-            return text;
-        }
+        if (text.Length <= maxLength) return text;
 
         return text[..(maxLength - 3)] + "...";
     }

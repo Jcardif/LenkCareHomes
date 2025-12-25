@@ -3,7 +3,7 @@ using LenkCareHomes.Api.Domain.Enums;
 namespace LenkCareHomes.Api.Models.CareLog;
 
 /// <summary>
-/// DTO for vitals log information.
+///     DTO for vitals log information.
 /// </summary>
 public sealed record VitalsLogDto
 {
@@ -24,7 +24,7 @@ public sealed record VitalsLogDto
 }
 
 /// <summary>
-/// Request model for creating a vitals log entry.
+///     Request model for creating a vitals log entry.
 /// </summary>
 public sealed record CreateVitalsLogRequest
 {
@@ -39,7 +39,7 @@ public sealed record CreateVitalsLogRequest
 }
 
 /// <summary>
-/// Response model for vitals log operations.
+///     Response model for vitals log operations.
 /// </summary>
 public sealed record VitalsLogOperationResponse
 {

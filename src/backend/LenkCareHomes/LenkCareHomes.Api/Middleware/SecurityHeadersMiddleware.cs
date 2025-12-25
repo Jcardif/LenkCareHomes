@@ -1,14 +1,14 @@
 namespace LenkCareHomes.Api.Middleware;
 
 /// <summary>
-/// Middleware that adds security headers to all HTTP responses.
-/// Implements OWASP security best practices for HIPAA compliance.
+///     Middleware that adds security headers to all HTTP responses.
+///     Implements OWASP security best practices for HIPAA compliance.
 /// </summary>
 public sealed class SecurityHeadersMiddleware
 {
-    private readonly RequestDelegate _next;
     private readonly IWebHostEnvironment _environment;
     private readonly ILogger<SecurityHeadersMiddleware> _logger;
+    private readonly RequestDelegate _next;
 
     public SecurityHeadersMiddleware(
         RequestDelegate next,
@@ -38,36 +38,22 @@ public sealed class SecurityHeadersMiddleware
 
         // Prevent clickjacking attacks
         // X-Frame-Options: Prevents the page from being embedded in iframes
-        if (!headers.ContainsKey("X-Frame-Options"))
-        {
-            headers["X-Frame-Options"] = "DENY";
-        }
+        if (!headers.ContainsKey("X-Frame-Options")) headers["X-Frame-Options"] = "DENY";
 
         // Prevent MIME type sniffing
         // X-Content-Type-Options: Prevents browsers from MIME-sniffing responses
-        if (!headers.ContainsKey("X-Content-Type-Options"))
-        {
-            headers["X-Content-Type-Options"] = "nosniff";
-        }
+        if (!headers.ContainsKey("X-Content-Type-Options")) headers["X-Content-Type-Options"] = "nosniff";
 
         // Enable XSS protection (for older browsers)
         // X-XSS-Protection: Enables the browser's built-in XSS filter
-        if (!headers.ContainsKey("X-XSS-Protection"))
-        {
-            headers["X-XSS-Protection"] = "1; mode=block";
-        }
+        if (!headers.ContainsKey("X-XSS-Protection")) headers["X-XSS-Protection"] = "1; mode=block";
 
         // Referrer Policy: Controls how much referrer information is sent
-        if (!headers.ContainsKey("Referrer-Policy"))
-        {
-            headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-        }
+        if (!headers.ContainsKey("Referrer-Policy")) headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
 
         // Permissions Policy: Restricts browser features
         if (!headers.ContainsKey("Permissions-Policy"))
-        {
             headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=(), payment=()";
-        }
 
         // Content Security Policy: Prevents XSS, injection attacks
         // More restrictive in production, allows inline scripts in development for hot reload
@@ -100,9 +86,7 @@ public sealed class SecurityHeadersMiddleware
         // Strict Transport Security: Forces HTTPS (production only)
         // HSTS: Tells browsers to only use HTTPS
         if (!_environment.IsDevelopment() && !headers.ContainsKey("Strict-Transport-Security"))
-        {
             headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload";
-        }
 
         // Cache Control: Prevents caching of sensitive data
         // Important for PHI - ensure responses are not cached
@@ -123,12 +107,12 @@ public sealed class SecurityHeadersMiddleware
 }
 
 /// <summary>
-/// Extension methods for adding security headers middleware.
+///     Extension methods for adding security headers middleware.
 /// </summary>
 public static class SecurityHeadersMiddlewareExtensions
 {
     /// <summary>
-    /// Adds the security headers middleware to the application pipeline.
+    ///     Adds the security headers middleware to the application pipeline.
     /// </summary>
     public static IApplicationBuilder UseSecurityHeaders(this IApplicationBuilder builder)
     {

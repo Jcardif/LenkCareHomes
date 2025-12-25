@@ -1,7 +1,7 @@
 namespace LenkCareHomes.Api.Models.Beds;
 
 /// <summary>
-/// DTO for bed information.
+///     DTO for bed information.
 /// </summary>
 public sealed record BedDto
 {
@@ -17,18 +17,18 @@ public sealed record BedDto
 }
 
 /// <summary>
-/// Request model for creating a bed.
+///     Request model for creating a bed.
 /// </summary>
 public sealed record CreateBedRequest
 {
     /// <summary>
-    /// Gets the static label for the bed.
+    ///     Gets the static label for the bed.
     /// </summary>
     public required string Label { get; init; }
 }
 
 /// <summary>
-/// Request model for updating a bed.
+///     Request model for updating a bed.
 /// </summary>
 public sealed record UpdateBedRequest
 {
@@ -37,7 +37,7 @@ public sealed record UpdateBedRequest
 }
 
 /// <summary>
-/// Response model for bed operations.
+///     Response model for bed operations.
 /// </summary>
 public sealed record BedOperationResponse
 {

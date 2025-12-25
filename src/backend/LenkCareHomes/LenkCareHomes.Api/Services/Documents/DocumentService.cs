@@ -1,6 +1,7 @@
 using LenkCareHomes.Api.Data;
 using LenkCareHomes.Api.Domain.Constants;
 using LenkCareHomes.Api.Domain.Entities;
+using LenkCareHomes.Api.Domain.Enums;
 using LenkCareHomes.Api.Models.Documents;
 using LenkCareHomes.Api.Services.Audit;
 using Microsoft.EntityFrameworkCore;
@@ -9,14 +10,14 @@ using Microsoft.Extensions.Options;
 namespace LenkCareHomes.Api.Services.Documents;
 
 /// <summary>
-/// Service for document management operations.
+///     Service for document management operations.
 /// </summary>
 public sealed class DocumentService : IDocumentService
 {
-    private readonly ApplicationDbContext _dbContext;
-    private readonly IBlobStorageService _blobStorageService;
     private readonly IAuditLogService _auditLogService;
     private readonly BlobStorageSettings _blobSettings;
+    private readonly IBlobStorageService _blobStorageService;
+    private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<DocumentService> _logger;
 
     public DocumentService(
@@ -44,34 +45,22 @@ public sealed class DocumentService : IDocumentService
         ArgumentNullException.ThrowIfNull(request);
 
         // Validate request
-        if (string.IsNullOrWhiteSpace(request.FileName))
-        {
-            return DocumentUploadResponse.Fail("File name is required.");
-        }
+        if (string.IsNullOrWhiteSpace(request.FileName)) return DocumentUploadResponse.Fail("File name is required.");
 
         if (string.IsNullOrWhiteSpace(request.ContentType))
-        {
             return DocumentUploadResponse.Fail("Content type is required.");
-        }
 
-        if (request.FileSizeBytes <= 0)
-        {
-            return DocumentUploadResponse.Fail("File size must be greater than 0.");
-        }
+        if (request.FileSizeBytes <= 0) return DocumentUploadResponse.Fail("File size must be greater than 0.");
 
         if (request.FileSizeBytes > _blobSettings.MaxFileSizeBytes)
-        {
-            return DocumentUploadResponse.Fail($"File size exceeds maximum allowed ({_blobSettings.MaxFileSizeBytes / 1024 / 1024}MB).");
-        }
+            return DocumentUploadResponse.Fail(
+                $"File size exceeds maximum allowed ({_blobSettings.MaxFileSizeBytes / 1024 / 1024}MB).");
 
         // Verify client exists
         var client = await _dbContext.Clients
             .FirstOrDefaultAsync(c => c.Id == clientId, cancellationToken);
 
-        if (client is null)
-        {
-            return DocumentUploadResponse.Fail("Client not found.");
-        }
+        if (client is null) return DocumentUploadResponse.Fail("Client not found.");
 
         // Generate unique blob filename: {name}_{type}_{checksum}.{ext}
         // Example: care_plan_CarePlan_A7B3.pdf
@@ -133,25 +122,16 @@ public sealed class DocumentService : IDocumentService
         ArgumentNullException.ThrowIfNull(request);
 
         // Validate common fields
-        if (string.IsNullOrWhiteSpace(request.FileName))
-        {
-            return DocumentUploadResponse.Fail("File name is required.");
-        }
+        if (string.IsNullOrWhiteSpace(request.FileName)) return DocumentUploadResponse.Fail("File name is required.");
 
         if (string.IsNullOrWhiteSpace(request.ContentType))
-        {
             return DocumentUploadResponse.Fail("Content type is required.");
-        }
 
-        if (request.FileSizeBytes <= 0)
-        {
-            return DocumentUploadResponse.Fail("File size must be greater than 0.");
-        }
+        if (request.FileSizeBytes <= 0) return DocumentUploadResponse.Fail("File size must be greater than 0.");
 
         if (request.FileSizeBytes > _blobSettings.MaxFileSizeBytes)
-        {
-            return DocumentUploadResponse.Fail($"File size exceeds maximum allowed ({_blobSettings.MaxFileSizeBytes / 1024 / 1024}MB).");
-        }
+            return DocumentUploadResponse.Fail(
+                $"File size exceeds maximum allowed ({_blobSettings.MaxFileSizeBytes / 1024 / 1024}MB).");
 
         // Validate scope-specific requirements
         var scope = request.Scope;
@@ -159,37 +139,30 @@ public sealed class DocumentService : IDocumentService
 
         switch (scope)
         {
-            case Domain.Enums.DocumentScope.Client:
+            case DocumentScope.Client:
                 if (!request.ClientId.HasValue)
-                {
                     return DocumentUploadResponse.Fail("ClientId is required for client-scoped documents.");
-                }
-                var client = await _dbContext.Clients.FirstOrDefaultAsync(c => c.Id == request.ClientId.Value, cancellationToken);
-                if (client is null)
-                {
-                    return DocumentUploadResponse.Fail("Client not found.");
-                }
+                var client =
+                    await _dbContext.Clients.FirstOrDefaultAsync(c => c.Id == request.ClientId.Value,
+                        cancellationToken);
+                if (client is null) return DocumentUploadResponse.Fail("Client not found.");
                 contextInfo = $"for client {client.FullName}";
                 break;
 
-            case Domain.Enums.DocumentScope.Home:
+            case DocumentScope.Home:
                 if (!request.HomeId.HasValue)
-                {
                     return DocumentUploadResponse.Fail("HomeId is required for home-scoped documents.");
-                }
-                var home = await _dbContext.Homes.FirstOrDefaultAsync(h => h.Id == request.HomeId.Value, cancellationToken);
-                if (home is null)
-                {
-                    return DocumentUploadResponse.Fail("Home not found.");
-                }
+                var home = await _dbContext.Homes.FirstOrDefaultAsync(h => h.Id == request.HomeId.Value,
+                    cancellationToken);
+                if (home is null) return DocumentUploadResponse.Fail("Home not found.");
                 contextInfo = $"for home {home.Name}";
                 break;
 
-            case Domain.Enums.DocumentScope.Business:
+            case DocumentScope.Business:
                 contextInfo = "for business documents";
                 break;
 
-            case Domain.Enums.DocumentScope.General:
+            case DocumentScope.General:
             default:
                 contextInfo = "as general document";
                 break;
@@ -200,15 +173,9 @@ public sealed class DocumentService : IDocumentService
         {
             var folder = await _dbContext.DocumentFolders
                 .FirstOrDefaultAsync(f => f.Id == request.FolderId.Value, cancellationToken);
-            if (folder is null)
-            {
-                return DocumentUploadResponse.Fail("Folder not found.");
-            }
+            if (folder is null) return DocumentUploadResponse.Fail("Folder not found.");
             // Folder scope must match document scope
-            if (folder.Scope != scope)
-            {
-                return DocumentUploadResponse.Fail("Document scope must match folder scope.");
-            }
+            if (folder.Scope != scope) return DocumentUploadResponse.Fail("Document scope must match folder scope.");
         }
 
         // Generate unique blob filename
@@ -273,15 +240,9 @@ public sealed class DocumentService : IDocumentService
         var document = await _dbContext.Documents
             .FirstOrDefaultAsync(d => d.Id == documentId, cancellationToken);
 
-        if (document is null)
-        {
-            return DocumentOperationResponse.Fail("Document not found.");
-        }
+        if (document is null) return DocumentOperationResponse.Fail("Document not found.");
 
-        if (document.IsActive)
-        {
-            return DocumentOperationResponse.Fail("Document upload already confirmed.");
-        }
+        if (document.IsActive) return DocumentOperationResponse.Fail("Document upload already confirmed.");
 
         // Verify blob exists
         var blobExists = await _blobStorageService.BlobExistsAsync(document.BlobPath);
@@ -292,9 +253,8 @@ public sealed class DocumentService : IDocumentService
             blobExists);
 
         if (!blobExists)
-        {
-            return DocumentOperationResponse.Fail($"Document file not found in storage at path '{document.BlobPath}'. Upload may have failed.");
-        }
+            return DocumentOperationResponse.Fail(
+                $"Document file not found in storage at path '{document.BlobPath}'. Upload may have failed.");
 
         document.IsActive = true;
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -315,16 +275,10 @@ public sealed class DocumentService : IDocumentService
         var client = await _dbContext.Clients
             .FirstOrDefaultAsync(c => c.Id == clientId, cancellationToken);
 
-        if (client is null)
-        {
-            return [];
-        }
+        if (client is null) return [];
 
         // Check home scope for caregivers
-        if (allowedHomeIds is not null && !allowedHomeIds.Contains(client.HomeId))
-        {
-            return [];
-        }
+        if (allowedHomeIds is not null && !allowedHomeIds.Contains(client.HomeId)) return [];
 
         var query = _dbContext.Documents
             .Include(d => d.Client)
@@ -376,22 +330,17 @@ public sealed class DocumentService : IDocumentService
             .Include(d => d.Folder)
             .Include(d => d.UploadedBy)
             .Include(d => d.AccessPermissions)
-                .ThenInclude(p => p.Caregiver)
+            .ThenInclude(p => p.Caregiver)
             .Include(d => d.AccessPermissions)
-                .ThenInclude(p => p.GrantedBy)
+            .ThenInclude(p => p.GrantedBy)
             .AsNoTracking()
             .FirstOrDefaultAsync(d => d.Id == documentId, cancellationToken);
 
-        if (document is null || !document.IsActive)
-        {
-            return null;
-        }
+        if (document is null || !document.IsActive) return null;
 
         // Check home scope for caregivers
-        if (allowedHomeIds is not null && document.Client is not null && !allowedHomeIds.Contains(document.Client.HomeId))
-        {
-            return null;
-        }
+        if (allowedHomeIds is not null && document.Client is not null &&
+            !allowedHomeIds.Contains(document.Client.HomeId)) return null;
 
         return MapToDto(document);
     }
@@ -410,22 +359,15 @@ public sealed class DocumentService : IDocumentService
             .Include(d => d.AccessPermissions)
             .FirstOrDefaultAsync(d => d.Id == documentId && d.IsActive, cancellationToken);
 
-        if (document is null)
-        {
-            return DocumentViewResponse.Fail("Document not found.");
-        }
+        if (document is null) return DocumentViewResponse.Fail("Document not found.");
 
         // Check home scope for caregivers
-        if (allowedHomeIds is not null && document.Client is not null && !allowedHomeIds.Contains(document.Client.HomeId))
-        {
-            return DocumentViewResponse.Fail("Access denied.");
-        }
+        if (allowedHomeIds is not null && document.Client is not null &&
+            !allowedHomeIds.Contains(document.Client.HomeId)) return DocumentViewResponse.Fail("Access denied.");
 
         // Check access permission for caregivers
         if (!isAdmin && !document.AccessPermissions.Any(p => p.CaregiverId == userId))
-        {
             return DocumentViewResponse.Fail("You do not have permission to view this document.");
-        }
 
         // Generate read SAS URL (5-minute expiry)
         var (sasUrl, expiresAt) = await _blobStorageService.GetReadSasUrlAsync(document.BlobPath);
@@ -460,10 +402,7 @@ public sealed class DocumentService : IDocumentService
             .Include(d => d.Client)
             .FirstOrDefaultAsync(d => d.Id == documentId, cancellationToken);
 
-        if (document is null)
-        {
-            return DocumentOperationResponse.Fail("Document not found.");
-        }
+        if (document is null) return DocumentOperationResponse.Fail("Document not found.");
 
         // Soft delete - mark as inactive
         document.IsActive = false;
@@ -502,26 +441,18 @@ public sealed class DocumentService : IDocumentService
         ArgumentNullException.ThrowIfNull(request);
 
         if (request.CaregiverIds.Count == 0)
-        {
             return DocumentOperationResponse.Fail("At least one caregiver must be specified.");
-        }
 
         var document = await _dbContext.Documents
             .Include(d => d.Client)
             .Include(d => d.AccessPermissions)
             .FirstOrDefaultAsync(d => d.Id == documentId && d.IsActive, cancellationToken);
 
-        if (document is null)
-        {
-            return DocumentOperationResponse.Fail("Document not found.");
-        }
+        if (document is null) return DocumentOperationResponse.Fail("Document not found.");
 
         // Verify caregivers are assigned to the same home as the client
         var clientHomeId = document.Client?.HomeId;
-        if (clientHomeId is null)
-        {
-            return DocumentOperationResponse.Fail("Client home not found.");
-        }
+        if (clientHomeId is null) return DocumentOperationResponse.Fail("Client home not found.");
 
         var validCaregiverIds = await _dbContext.CaregiverHomeAssignments
             .Where(ca => ca.HomeId == clientHomeId && request.CaregiverIds.Contains(ca.UserId) && ca.IsActive)
@@ -529,9 +460,8 @@ public sealed class DocumentService : IDocumentService
             .ToListAsync(cancellationToken);
 
         if (validCaregiverIds.Count == 0)
-        {
-            return DocumentOperationResponse.Fail("None of the specified caregivers are assigned to the client's home.");
-        }
+            return DocumentOperationResponse.Fail(
+                "None of the specified caregivers are assigned to the client's home.");
 
         // Add permissions for valid caregivers who don't already have access
         var existingPermissions = document.AccessPermissions.Select(p => p.CaregiverId).ToHashSet();
@@ -598,10 +528,7 @@ public sealed class DocumentService : IDocumentService
             .Include(p => p.Document)
             .FirstOrDefaultAsync(p => p.DocumentId == documentId && p.CaregiverId == caregiverId, cancellationToken);
 
-        if (permission is null)
-        {
-            return DocumentOperationResponse.Fail("Permission not found.");
-        }
+        if (permission is null) return DocumentOperationResponse.Fail("Permission not found.");
 
         _dbContext.DocumentAccessPermissions.Remove(permission);
 
@@ -691,10 +618,10 @@ public sealed class DocumentService : IDocumentService
     }
 
     /// <summary>
-    /// Generates a unique blob filename: {name}_{type}_{checksum}.{ext}
-    /// Example: care_plan_CarePlan_A7B3.pdf
+    ///     Generates a unique blob filename: {name}_{type}_{checksum}.{ext}
+    ///     Example: care_plan_CarePlan_A7B3.pdf
     /// </summary>
-    private static string GenerateBlobFileName(string originalFileName, Domain.Enums.DocumentType documentType, Guid documentId)
+    private static string GenerateBlobFileName(string originalFileName, DocumentType documentType, Guid documentId)
     {
         var extension = Path.GetExtension(originalFileName).ToLowerInvariant();
         var nameWithoutExt = Path.GetFileNameWithoutExtension(originalFileName);
@@ -708,19 +635,13 @@ public sealed class DocumentService : IDocumentService
             .ToArray());
 
         // Remove consecutive underscores
-        while (sanitizedName.Contains("__"))
-        {
-            sanitizedName = sanitizedName.Replace("__", "_");
-        }
+        while (sanitizedName.Contains("__")) sanitizedName = sanitizedName.Replace("__", "_");
 
         // Trim underscores from start/end
         sanitizedName = sanitizedName.Trim('_');
 
         // Limit name length
-        if (sanitizedName.Length > 50)
-        {
-            sanitizedName = sanitizedName[..50];
-        }
+        if (sanitizedName.Length > 50) sanitizedName = sanitizedName[..50];
 
         // Generate short checksum from document ID (first 4 chars of GUID)
         var checksum = documentId.ToString("N")[..4].ToUpperInvariant();
@@ -774,20 +695,20 @@ public sealed class DocumentService : IDocumentService
     }
 
     /// <summary>
-    /// Generates a blob path based on the document scope.
+    ///     Generates a blob path based on the document scope.
     /// </summary>
     private static string GenerateBlobPath(
-        Domain.Enums.DocumentScope scope,
+        DocumentScope scope,
         Guid? clientId,
         Guid? homeId,
         string blobFileName)
     {
         return scope switch
         {
-            Domain.Enums.DocumentScope.Client => $"clients/{clientId}/{blobFileName}",
-            Domain.Enums.DocumentScope.Home => $"homes/{homeId}/{blobFileName}",
-            Domain.Enums.DocumentScope.Business => $"business/{blobFileName}",
-            Domain.Enums.DocumentScope.General => $"general/{blobFileName}",
+            DocumentScope.Client => $"clients/{clientId}/{blobFileName}",
+            DocumentScope.Home => $"homes/{homeId}/{blobFileName}",
+            DocumentScope.Business => $"business/{blobFileName}",
+            DocumentScope.General => $"general/{blobFileName}",
             _ => $"general/{blobFileName}"
         };
     }

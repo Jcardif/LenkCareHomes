@@ -1,5 +1,5 @@
 <Solution>
-  <Project Path="LenkCareHomes.AppHost/LenkCareHomes.AppHost.csproj" />
-  <Project Path="LenkCareHomes.ServiceDefaults/LenkCareHomes.ServiceDefaults.csproj" />
-  <Project Path="LenkCareHomes.Api/LenkCareHomes.Api.csproj" />
+    <Project Path="LenkCareHomes.AppHost/LenkCareHomes.AppHost.csproj"/>
+    <Project Path="LenkCareHomes.ServiceDefaults/LenkCareHomes.ServiceDefaults.csproj"/>
+    <Project Path="LenkCareHomes.Api/LenkCareHomes.Api.csproj"/>
 </Solution>

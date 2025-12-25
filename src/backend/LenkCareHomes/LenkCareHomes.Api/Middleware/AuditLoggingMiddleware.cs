@@ -3,20 +3,18 @@ using System.Security.Claims;
 using LenkCareHomes.Api.Domain.Constants;
 using LenkCareHomes.Api.Domain.Entities;
 using LenkCareHomes.Api.Services.Audit;
+using Activity = System.Diagnostics.Activity;
 
 namespace LenkCareHomes.Api.Middleware;
 
 /// <summary>
-/// Middleware that logs all API requests to the audit log.
-/// Captures request details, user information, and response status.
+///     Middleware that logs all API requests to the audit log.
+///     Captures request details, user information, and response status.
 /// </summary>
 public sealed class AuditLoggingMiddleware
 {
-    private readonly RequestDelegate _next;
-    private readonly ILogger<AuditLoggingMiddleware> _logger;
-
     /// <summary>
-    /// Paths that should not be logged (health checks, static files, etc.)
+    ///     Paths that should not be logged (health checks, static files, etc.)
     /// </summary>
     private static readonly HashSet<string> ExcludedPaths = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -28,8 +26,8 @@ public sealed class AuditLoggingMiddleware
     };
 
     /// <summary>
-    /// Paths that involve PHI (Protected Health Information) access.
-    /// These get special logging treatment.
+    ///     Paths that involve PHI (Protected Health Information) access.
+    ///     These get special logging treatment.
     /// </summary>
     private static readonly HashSet<string> PhiPaths = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -42,6 +40,9 @@ public sealed class AuditLoggingMiddleware
         "/api/incidents",
         "/api/medications"
     };
+
+    private readonly ILogger<AuditLoggingMiddleware> _logger;
+    private readonly RequestDelegate _next;
 
     public AuditLoggingMiddleware(RequestDelegate next, ILogger<AuditLoggingMiddleware> logger)
     {
@@ -61,7 +62,7 @@ public sealed class AuditLoggingMiddleware
         }
 
         var stopwatch = Stopwatch.StartNew();
-        var correlationId = System.Diagnostics.Activity.Current?.Id ?? context.TraceIdentifier;
+        var correlationId = Activity.Current?.Id ?? context.TraceIdentifier;
 
         // Capture request info before processing
         var requestInfo = CaptureRequestInfo(context, correlationId);
@@ -96,8 +97,8 @@ public sealed class AuditLoggingMiddleware
     private static RequestInfo CaptureRequestInfo(HttpContext context, string correlationId)
     {
         var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var userEmail = context.User.FindFirst(ClaimTypes.Email)?.Value 
-                       ?? context.User.FindFirst(ClaimTypes.Name)?.Value;
+        var userEmail = context.User.FindFirst(ClaimTypes.Email)?.Value
+                        ?? context.User.FindFirst(ClaimTypes.Name)?.Value;
         var ipAddress = GetClientIpAddress(context);
         var userAgent = context.Request.Headers.UserAgent.FirstOrDefault();
 
@@ -118,10 +119,7 @@ public sealed class AuditLoggingMiddleware
     {
         // Check for forwarded headers (load balancer/proxy scenarios)
         var forwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-        if (!string.IsNullOrEmpty(forwardedFor))
-        {
-            return forwardedFor.Split(',').First().Trim();
-        }
+        if (!string.IsNullOrEmpty(forwardedFor)) return forwardedFor.Split(',').First().Trim();
 
         return context.Connection.RemoteIpAddress?.ToString();
     }
@@ -176,7 +174,6 @@ public sealed class AuditLoggingMiddleware
     {
         // Specific action mapping based on path patterns
         if (path.StartsWith("/api/auth", StringComparison.OrdinalIgnoreCase))
-        {
             return path.ToLowerInvariant() switch
             {
                 var p when p.Contains("/login") => AuditActions.LoginSuccess,
@@ -187,10 +184,8 @@ public sealed class AuditLoggingMiddleware
                 var p when p.Contains("/invitation") => AuditActions.InvitationAccepted,
                 _ => "API_REQUEST"
             };
-        }
 
         if (path.StartsWith("/api/users", StringComparison.OrdinalIgnoreCase))
-        {
             return method.ToUpperInvariant() switch
             {
                 "POST" when path.Contains("/invite") => AuditActions.UserInvited,
@@ -202,10 +197,8 @@ public sealed class AuditLoggingMiddleware
                 "PUT" => AuditActions.UserUpdated,
                 _ => "USER_MANAGEMENT"
             };
-        }
 
         if (isPhiAccess)
-        {
             return method.ToUpperInvariant() switch
             {
                 "GET" => AuditActions.PhiAccessed,
@@ -213,7 +206,6 @@ public sealed class AuditLoggingMiddleware
                 "DELETE" => AuditActions.PhiModified,
                 _ => AuditActions.PhiAccessed
             };
-        }
 
         // Generic action based on HTTP method
         return method.ToUpperInvariant() switch
@@ -240,16 +232,13 @@ public sealed class AuditLoggingMiddleware
     {
         // Parse paths like /api/users/{id} or /api/clients/{id}
         var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        
+
         if (segments.Length >= 2 && segments[0].Equals("api", StringComparison.OrdinalIgnoreCase))
         {
             var resourceType = segments[1];
-            
+
             // Check if there's a GUID in the path
-            if (segments.Length >= 3 && Guid.TryParse(segments[2], out _))
-            {
-                return (resourceType, segments[2]);
-            }
+            if (segments.Length >= 3 && Guid.TryParse(segments[2], out _)) return (resourceType, segments[2]);
 
             return (resourceType, null);
         }
@@ -271,12 +260,12 @@ public sealed class AuditLoggingMiddleware
 }
 
 /// <summary>
-/// Extension methods for adding audit logging middleware.
+///     Extension methods for adding audit logging middleware.
 /// </summary>
 public static class AuditLoggingMiddlewareExtensions
 {
     /// <summary>
-    /// Adds the audit logging middleware to the application pipeline.
+    ///     Adds the audit logging middleware to the application pipeline.
     /// </summary>
     public static IApplicationBuilder UseAuditLogging(this IApplicationBuilder builder)
     {

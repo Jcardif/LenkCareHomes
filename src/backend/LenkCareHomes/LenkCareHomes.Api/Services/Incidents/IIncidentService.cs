@@ -4,12 +4,12 @@ using LenkCareHomes.Api.Models.Incidents;
 namespace LenkCareHomes.Api.Services.Incidents;
 
 /// <summary>
-/// Service interface for incident reporting operations.
+///     Service interface for incident reporting operations.
 /// </summary>
 public interface IIncidentService
 {
     /// <summary>
-    /// Creates a new incident report.
+    ///     Creates a new incident report.
     /// </summary>
     Task<IncidentOperationResponse> CreateIncidentAsync(
         CreateIncidentRequest request,
@@ -18,8 +18,8 @@ public interface IIncidentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets all incidents with optional filters.
-    /// Draft incidents are only visible to the user who created them.
+    ///     Gets all incidents with optional filters.
+    ///     Draft incidents are only visible to the user who created them.
     /// </summary>
     Task<PagedIncidentResponse> GetIncidentsAsync(
         Guid currentUserId,
@@ -36,8 +36,8 @@ public interface IIncidentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets an incident by ID.
-    /// Draft incidents are only accessible to the user who created them.
+    ///     Gets an incident by ID.
+    ///     Draft incidents are only accessible to the user who created them.
     /// </summary>
     Task<IncidentDto?> GetIncidentByIdAsync(
         Guid incidentId,
@@ -47,8 +47,8 @@ public interface IIncidentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Updates a draft incident.
-    /// Only the creator can update their own drafts.
+    ///     Updates a draft incident.
+    ///     Only the creator can update their own drafts.
     /// </summary>
     Task<IncidentOperationResponse> UpdateIncidentAsync(
         Guid incidentId,
@@ -58,8 +58,8 @@ public interface IIncidentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Submits a draft incident for review.
-    /// Only the creator can submit their own drafts.
+    ///     Submits a draft incident for review.
+    ///     Only the creator can submit their own drafts.
     /// </summary>
     Task<IncidentOperationResponse> SubmitIncidentAsync(
         Guid incidentId,
@@ -68,7 +68,7 @@ public interface IIncidentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Updates incident status (Admin only).
+    ///     Updates incident status (Admin only).
     /// </summary>
     Task<IncidentOperationResponse> UpdateIncidentStatusAsync(
         Guid incidentId,
@@ -78,7 +78,7 @@ public interface IIncidentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Adds a follow-up note to an incident (Admin only).
+    ///     Adds a follow-up note to an incident (Admin only).
     /// </summary>
     Task<IncidentOperationResponse> AddFollowUpAsync(
         Guid incidentId,
@@ -88,8 +88,8 @@ public interface IIncidentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deletes a draft incident.
-    /// Only the creator can delete their own drafts.
+    ///     Deletes a draft incident.
+    ///     Only the creator can delete their own drafts.
     /// </summary>
     Task<IncidentOperationResponse> DeleteIncidentAsync(
         Guid incidentId,
@@ -98,15 +98,15 @@ public interface IIncidentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets count of recent new incidents (for dashboard).
+    ///     Gets count of recent new incidents (for dashboard).
     /// </summary>
     Task<int> GetRecentNewIncidentsCountAsync(
         int days = 7,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Initiates photo upload for an incident.
-    /// Returns SAS URL for direct upload to blob storage.
+    ///     Initiates photo upload for an incident.
+    ///     Returns SAS URL for direct upload to blob storage.
     /// </summary>
     Task<IncidentPhotoUploadResponse> InitiatePhotoUploadAsync(
         Guid incidentId,
@@ -116,7 +116,7 @@ public interface IIncidentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Confirms photo upload completed successfully.
+    ///     Confirms photo upload completed successfully.
     /// </summary>
     Task<IncidentPhotoOperationResponse> ConfirmPhotoUploadAsync(
         Guid photoId,
@@ -125,14 +125,14 @@ public interface IIncidentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets all photos for an incident.
+    ///     Gets all photos for an incident.
     /// </summary>
     Task<IReadOnlyList<IncidentPhotoDto>> GetIncidentPhotosAsync(
         Guid incidentId,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets a SAS URL for viewing a photo.
+    ///     Gets a SAS URL for viewing a photo.
     /// </summary>
     Task<IncidentPhotoViewResponse> GetPhotoViewUrlAsync(
         Guid photoId,
@@ -142,8 +142,8 @@ public interface IIncidentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deletes a photo from an incident.
-    /// Only incident author or admin can delete photos.
+    ///     Deletes a photo from an incident.
+    ///     Only incident author or admin can delete photos.
     /// </summary>
     Task<IncidentPhotoOperationResponse> DeletePhotoAsync(
         Guid photoId,
@@ -153,7 +153,7 @@ public interface IIncidentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Exports an incident report as PDF including all photos.
+    ///     Exports an incident report as PDF including all photos.
     /// </summary>
     Task<byte[]> ExportIncidentPdfAsync(
         Guid incidentId,

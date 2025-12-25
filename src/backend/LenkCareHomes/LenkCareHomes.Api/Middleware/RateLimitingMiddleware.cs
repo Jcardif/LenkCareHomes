@@ -3,23 +3,19 @@ using System.Collections.Concurrent;
 namespace LenkCareHomes.Api.Middleware;
 
 /// <summary>
-/// Middleware that implements rate limiting for authentication endpoints.
-/// Protects against brute force attacks while being lenient in development.
+///     Middleware that implements rate limiting for authentication endpoints.
+///     Protects against brute force attacks while being lenient in development.
 /// </summary>
 public sealed class RateLimitingMiddleware
 {
-    private readonly RequestDelegate _next;
-    private readonly IWebHostEnvironment _environment;
-    private readonly ILogger<RateLimitingMiddleware> _logger;
-
-    // In-memory store for rate limiting (in production, use Redis or similar)
-    private static readonly ConcurrentDictionary<string, RateLimitEntry> _rateLimits = new();
-
     // Rate limit settings
     private const int DevRequestsPerMinute = 100;
     private const int ProdRequestsPerMinute = 20;
     private const int DevBurstLimit = 30;
     private const int ProdBurstLimit = 10;
+
+    // In-memory store for rate limiting (in production, use Redis or similar)
+    private static readonly ConcurrentDictionary<string, RateLimitEntry> _rateLimits = new();
 
     // Paths that are rate limited
     private static readonly HashSet<string> RateLimitedPaths = new(StringComparer.OrdinalIgnoreCase)
@@ -31,6 +27,10 @@ public sealed class RateLimitingMiddleware
         "/api/auth/password/reset",
         "/api/auth/invitation/accept"
     };
+
+    private readonly IWebHostEnvironment _environment;
+    private readonly ILogger<RateLimitingMiddleware> _logger;
+    private readonly RequestDelegate _next;
 
     public RateLimitingMiddleware(
         RequestDelegate next,
@@ -108,10 +108,7 @@ public sealed class RateLimitingMiddleware
         await _next(context);
 
         // Cleanup old entries periodically
-        if (DateTime.UtcNow.Second == 0)
-        {
-            CleanupOldEntries();
-        }
+        if (DateTime.UtcNow.Second == 0) CleanupOldEntries();
     }
 
     private static bool ShouldRateLimit(string path)
@@ -124,10 +121,7 @@ public sealed class RateLimitingMiddleware
         // Use IP address as the client key
         // In production with load balancer, check X-Forwarded-For
         var forwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-        if (!string.IsNullOrEmpty(forwardedFor))
-        {
-            return forwardedFor.Split(',').First().Trim();
-        }
+        if (!string.IsNullOrEmpty(forwardedFor)) return forwardedFor.Split(',').First().Trim();
 
         return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
     }
@@ -140,10 +134,7 @@ public sealed class RateLimitingMiddleware
             .Select(kvp => kvp.Key)
             .ToList();
 
-        foreach (var key in keysToRemove)
-        {
-            _rateLimits.TryRemove(key, out _);
-        }
+        foreach (var key in keysToRemove) _rateLimits.TryRemove(key, out _);
     }
 
     private sealed class RateLimitEntry
@@ -156,12 +147,12 @@ public sealed class RateLimitingMiddleware
 }
 
 /// <summary>
-/// Extension methods for adding rate limiting middleware.
+///     Extension methods for adding rate limiting middleware.
 /// </summary>
 public static class RateLimitingMiddlewareExtensions
 {
     /// <summary>
-    /// Adds the rate limiting middleware to the application pipeline.
+    ///     Adds the rate limiting middleware to the application pipeline.
     /// </summary>
     public static IApplicationBuilder UseRateLimiting(this IApplicationBuilder builder)
     {

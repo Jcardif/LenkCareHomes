@@ -9,12 +9,12 @@ using Microsoft.EntityFrameworkCore;
 namespace LenkCareHomes.Api.Services.Beds;
 
 /// <summary>
-/// Service implementation for bed management operations.
+///     Service implementation for bed management operations.
 /// </summary>
 public sealed class BedService : IBedService
 {
-    private readonly ApplicationDbContext _dbContext;
     private readonly IAuditLogService _auditService;
+    private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<BedService> _logger;
 
     public BedService(
@@ -38,10 +38,7 @@ public sealed class BedService : IBedService
             .Include(b => b.CurrentOccupant)
             .Where(b => b.HomeId == homeId);
 
-        if (!includeInactive)
-        {
-            query = query.Where(b => b.IsActive);
-        }
+        if (!includeInactive) query = query.Where(b => b.IsActive);
 
         var beds = await query
             .OrderBy(b => b.Label)
@@ -73,36 +70,27 @@ public sealed class BedService : IBedService
 
         // Validate request
         if (string.IsNullOrWhiteSpace(request.Label))
-        {
             return new BedOperationResponse { Success = false, Error = "Bed label is required." };
-        }
 
         // Verify home exists and is active
         var home = await _dbContext.Homes
             .FirstOrDefaultAsync(h => h.Id == homeId, cancellationToken);
 
-        if (home is null)
-        {
-            return new BedOperationResponse { Success = false, Error = "Home not found." };
-        }
+        if (home is null) return new BedOperationResponse { Success = false, Error = "Home not found." };
 
         if (!home.IsActive)
-        {
             return new BedOperationResponse { Success = false, Error = "Cannot add beds to an inactive home." };
-        }
 
         // Check for duplicate label within the home
         var existingBed = await _dbContext.Beds
             .AnyAsync(b => b.HomeId == homeId && b.Label == request.Label, cancellationToken);
 
         if (existingBed)
-        {
             return new BedOperationResponse
             {
                 Success = false,
                 Error = $"A bed with label '{request.Label}' already exists in this home."
             };
-        }
 
         var bed = new Bed
         {
@@ -155,20 +143,15 @@ public sealed class BedService : IBedService
             .Include(b => b.Home)
             .FirstOrDefaultAsync(b => b.Id == bedId, cancellationToken);
 
-        if (bed is null)
-        {
-            return new BedOperationResponse { Success = false, Error = "Bed not found." };
-        }
+        if (bed is null) return new BedOperationResponse { Success = false, Error = "Bed not found." };
 
         // Check if trying to deactivate an occupied bed
         if (request.IsActive == false && bed.Status == BedStatus.Occupied)
-        {
             return new BedOperationResponse
             {
                 Success = false,
                 Error = "Cannot deactivate an occupied bed. Please discharge the client first."
             };
-        }
 
         // Check for duplicate label if label is being changed
         if (!string.IsNullOrWhiteSpace(request.Label) && request.Label != bed.Label)
@@ -177,21 +160,16 @@ public sealed class BedService : IBedService
                 .AnyAsync(b => b.HomeId == bed.HomeId && b.Label == request.Label && b.Id != bedId, cancellationToken);
 
             if (existingBed)
-            {
                 return new BedOperationResponse
                 {
                     Success = false,
                     Error = $"A bed with label '{request.Label}' already exists in this home."
                 };
-            }
 
             bed.Label = request.Label;
         }
 
-        if (request.IsActive.HasValue)
-        {
-            bed.IsActive = request.IsActive.Value;
-        }
+        if (request.IsActive.HasValue) bed.IsActive = request.IsActive.Value;
 
         bed.UpdatedAt = DateTime.UtcNow;
 
@@ -201,8 +179,8 @@ public sealed class BedService : IBedService
         var userEmail = await GetUserEmailAsync(updatedById, cancellationToken);
 
         var action = request.IsActive == false ? AuditActions.BedDeactivated :
-                     request.IsActive == true ? AuditActions.BedReactivated :
-                     AuditActions.BedUpdated;
+            request.IsActive == true ? AuditActions.BedReactivated :
+            AuditActions.BedUpdated;
 
         await _auditService.LogPhiAccessAsync(
             action,

@@ -9,7 +9,7 @@
 
 A **HIPAA-compliant** web application for managing adult family homes. LenkCare Homes provides a comprehensive solution for tracking residents, caregivers, daily care activities, and maintaining regulatory compliance.
 
-> **⚠️ Internal Use Only** — This application is designed for authorized healthcare personnel only. No public access or self-registration.
+> **⚠️ Internal Use Only** — This application is designed for authorized personnel only. No self-registration.
 
 ---
 

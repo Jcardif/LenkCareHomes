@@ -3,12 +3,12 @@ using LenkCareHomes.Api.Models.Passkey;
 namespace LenkCareHomes.Api.Services.Passkey;
 
 /// <summary>
-/// Service interface for WebAuthn/FIDO2 passkey operations.
+///     Service interface for WebAuthn/FIDO2 passkey operations.
 /// </summary>
 public interface IPasskeyService
 {
     /// <summary>
-    /// Begins the passkey registration process for a user.
+    ///     Begins the passkey registration process for a user.
     /// </summary>
     /// <param name="userId">The user ID.</param>
     /// <param name="deviceName">The user-friendly name for this device.</param>
@@ -22,7 +22,7 @@ public interface IPasskeyService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Completes the passkey registration process.
+    ///     Completes the passkey registration process.
     /// </summary>
     /// <param name="userId">The user ID.</param>
     /// <param name="request">The registration completion request.</param>
@@ -40,7 +40,7 @@ public interface IPasskeyService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Begins the passkey authentication process.
+    ///     Begins the passkey authentication process.
     /// </summary>
     /// <param name="email">Optional email to identify the user.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -50,7 +50,7 @@ public interface IPasskeyService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Completes the passkey authentication process.
+    ///     Completes the passkey authentication process.
     /// </summary>
     /// <param name="request">The authentication completion request.</param>
     /// <param name="ipAddress">Client IP address for audit logging.</param>
@@ -64,7 +64,7 @@ public interface IPasskeyService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets all passkeys for a user.
+    ///     Gets all passkeys for a user.
     /// </summary>
     /// <param name="userId">The user ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -74,7 +74,7 @@ public interface IPasskeyService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Updates a passkey's device name.
+    ///     Updates a passkey's device name.
     /// </summary>
     /// <param name="userId">The user ID.</param>
     /// <param name="passkeyId">The passkey ID.</param>
@@ -90,7 +90,7 @@ public interface IPasskeyService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deletes a passkey.
+    ///     Deletes a passkey.
     /// </summary>
     /// <param name="userId">The user ID.</param>
     /// <param name="passkeyId">The passkey ID.</param>
@@ -104,7 +104,7 @@ public interface IPasskeyService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets the count of active passkeys for a user.
+    ///     Gets the count of active passkeys for a user.
     /// </summary>
     /// <param name="userId">The user ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>

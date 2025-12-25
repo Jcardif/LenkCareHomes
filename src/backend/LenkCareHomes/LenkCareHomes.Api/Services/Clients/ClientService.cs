@@ -9,12 +9,12 @@ using Microsoft.EntityFrameworkCore;
 namespace LenkCareHomes.Api.Services.Clients;
 
 /// <summary>
-/// Service implementation for client management operations.
+///     Service implementation for client management operations.
 /// </summary>
 public sealed class ClientService : IClientService
 {
-    private readonly ApplicationDbContext _dbContext;
     private readonly IAuditLogService _auditService;
+    private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<ClientService> _logger;
 
     public ClientService(
@@ -41,22 +41,13 @@ public sealed class ClientService : IClientService
             .AsQueryable();
 
         // Apply home filter
-        if (homeId.HasValue)
-        {
-            query = query.Where(c => c.HomeId == homeId.Value);
-        }
+        if (homeId.HasValue) query = query.Where(c => c.HomeId == homeId.Value);
 
         // Apply active status filter
-        if (isActive.HasValue)
-        {
-            query = query.Where(c => c.IsActive == isActive.Value);
-        }
+        if (isActive.HasValue) query = query.Where(c => c.IsActive == isActive.Value);
 
         // Apply home-scoped authorization for caregivers
-        if (allowedHomeIds is { Count: > 0 })
-        {
-            query = query.Where(c => allowedHomeIds.Contains(c.HomeId));
-        }
+        if (allowedHomeIds is { Count: > 0 }) query = query.Where(c => allowedHomeIds.Contains(c.HomeId));
 
         var clients = await query
             .OrderBy(c => c.LastName)
@@ -79,10 +70,7 @@ public sealed class ClientService : IClientService
             .Where(c => c.Id == clientId);
 
         // Apply home-scoped authorization for caregivers
-        if (allowedHomeIds is { Count: > 0 })
-        {
-            query = query.Where(c => allowedHomeIds.Contains(c.HomeId));
-        }
+        if (allowedHomeIds is { Count: > 0 }) query = query.Where(c => allowedHomeIds.Contains(c.HomeId));
 
         var client = await query.FirstOrDefaultAsync(cancellationToken);
 
@@ -100,52 +88,35 @@ public sealed class ClientService : IClientService
 
         // Validate required fields
         if (string.IsNullOrWhiteSpace(request.FirstName))
-        {
             return new ClientOperationResponse { Success = false, Error = "First name is required." };
-        }
 
         if (string.IsNullOrWhiteSpace(request.LastName))
-        {
             return new ClientOperationResponse { Success = false, Error = "Last name is required." };
-        }
 
         // Verify home exists and is active
         var home = await _dbContext.Homes
             .FirstOrDefaultAsync(h => h.Id == request.HomeId, cancellationToken);
 
-        if (home is null)
-        {
-            return new ClientOperationResponse { Success = false, Error = "Home not found." };
-        }
+        if (home is null) return new ClientOperationResponse { Success = false, Error = "Home not found." };
 
         if (!home.IsActive)
-        {
             return new ClientOperationResponse { Success = false, Error = "Cannot admit clients to an inactive home." };
-        }
 
         // Verify bed exists, is active, and is available
         var bed = await _dbContext.Beds
             .FirstOrDefaultAsync(b => b.Id == request.BedId, cancellationToken);
 
-        if (bed is null)
-        {
-            return new ClientOperationResponse { Success = false, Error = "Bed not found." };
-        }
+        if (bed is null) return new ClientOperationResponse { Success = false, Error = "Bed not found." };
 
         if (bed.HomeId != request.HomeId)
-        {
-            return new ClientOperationResponse { Success = false, Error = "Bed does not belong to the specified home." };
-        }
+            return new ClientOperationResponse
+                { Success = false, Error = "Bed does not belong to the specified home." };
 
         if (!bed.IsActive)
-        {
             return new ClientOperationResponse { Success = false, Error = "Cannot assign client to an inactive bed." };
-        }
 
         if (bed.Status == BedStatus.Occupied)
-        {
             return new ClientOperationResponse { Success = false, Error = "Bed is already occupied." };
-        }
 
         // Create the client
         var client = new Client
@@ -228,88 +199,42 @@ public sealed class ClientService : IClientService
             .Where(c => c.Id == clientId);
 
         // Apply home-scoped authorization
-        if (allowedHomeIds is { Count: > 0 })
-        {
-            query = query.Where(c => allowedHomeIds.Contains(c.HomeId));
-        }
+        if (allowedHomeIds is { Count: > 0 }) query = query.Where(c => allowedHomeIds.Contains(c.HomeId));
 
         var client = await query.FirstOrDefaultAsync(cancellationToken);
 
         if (client is null)
-        {
             return new ClientOperationResponse { Success = false, Error = "Client not found or access denied." };
-        }
 
         // Update properties if provided
-        if (!string.IsNullOrWhiteSpace(request.FirstName))
-        {
-            client.FirstName = request.FirstName;
-        }
+        if (!string.IsNullOrWhiteSpace(request.FirstName)) client.FirstName = request.FirstName;
 
-        if (!string.IsNullOrWhiteSpace(request.LastName))
-        {
-            client.LastName = request.LastName;
-        }
+        if (!string.IsNullOrWhiteSpace(request.LastName)) client.LastName = request.LastName;
 
-        if (request.DateOfBirth.HasValue)
-        {
-            client.DateOfBirth = request.DateOfBirth.Value;
-        }
+        if (request.DateOfBirth.HasValue) client.DateOfBirth = request.DateOfBirth.Value;
 
-        if (!string.IsNullOrWhiteSpace(request.Gender))
-        {
-            client.Gender = request.Gender;
-        }
+        if (!string.IsNullOrWhiteSpace(request.Gender)) client.Gender = request.Gender;
 
-        if (request.PrimaryPhysician is not null)
-        {
-            client.PrimaryPhysician = request.PrimaryPhysician;
-        }
+        if (request.PrimaryPhysician is not null) client.PrimaryPhysician = request.PrimaryPhysician;
 
-        if (request.PrimaryPhysicianPhone is not null)
-        {
-            client.PrimaryPhysicianPhone = request.PrimaryPhysicianPhone;
-        }
+        if (request.PrimaryPhysicianPhone is not null) client.PrimaryPhysicianPhone = request.PrimaryPhysicianPhone;
 
-        if (request.EmergencyContactName is not null)
-        {
-            client.EmergencyContactName = request.EmergencyContactName;
-        }
+        if (request.EmergencyContactName is not null) client.EmergencyContactName = request.EmergencyContactName;
 
-        if (request.EmergencyContactPhone is not null)
-        {
-            client.EmergencyContactPhone = request.EmergencyContactPhone;
-        }
+        if (request.EmergencyContactPhone is not null) client.EmergencyContactPhone = request.EmergencyContactPhone;
 
         if (request.EmergencyContactRelationship is not null)
-        {
             client.EmergencyContactRelationship = request.EmergencyContactRelationship;
-        }
 
-        if (request.Allergies is not null)
-        {
-            client.Allergies = request.Allergies;
-        }
+        if (request.Allergies is not null) client.Allergies = request.Allergies;
 
-        if (request.Diagnoses is not null)
-        {
-            client.Diagnoses = request.Diagnoses;
-        }
+        if (request.Diagnoses is not null) client.Diagnoses = request.Diagnoses;
 
-        if (request.MedicationList is not null)
-        {
-            client.MedicationList = request.MedicationList;
-        }
+        if (request.MedicationList is not null) client.MedicationList = request.MedicationList;
 
-        if (request.Notes is not null)
-        {
-            client.Notes = request.Notes;
-        }
+        if (request.Notes is not null) client.Notes = request.Notes;
 
-        if (request.PhotoUrl is not null)
-        {
-            client.PhotoUrl = request.PhotoUrl;
-        }
+        if (request.PhotoUrl is not null) client.PhotoUrl = request.PhotoUrl;
 
         client.UpdatedAt = DateTime.UtcNow;
 
@@ -353,15 +278,10 @@ public sealed class ClientService : IClientService
             .Include(c => c.Bed)
             .FirstOrDefaultAsync(c => c.Id == clientId, cancellationToken);
 
-        if (client is null)
-        {
-            return new ClientOperationResponse { Success = false, Error = "Client not found." };
-        }
+        if (client is null) return new ClientOperationResponse { Success = false, Error = "Client not found." };
 
         if (!client.IsActive)
-        {
             return new ClientOperationResponse { Success = false, Error = "Client is already discharged." };
-        }
 
         // Update client
         client.DischargeDate = request.DischargeDate;
@@ -419,39 +339,26 @@ public sealed class ClientService : IClientService
             .Include(c => c.Bed)
             .FirstOrDefaultAsync(c => c.Id == clientId, cancellationToken);
 
-        if (client is null)
-        {
-            return new ClientOperationResponse { Success = false, Error = "Client not found." };
-        }
+        if (client is null) return new ClientOperationResponse { Success = false, Error = "Client not found." };
 
         if (!client.IsActive)
-        {
             return new ClientOperationResponse { Success = false, Error = "Cannot transfer a discharged client." };
-        }
 
         // Get the new bed
         var newBed = await _dbContext.Beds
             .FirstOrDefaultAsync(b => b.Id == request.NewBedId, cancellationToken);
 
-        if (newBed is null)
-        {
-            return new ClientOperationResponse { Success = false, Error = "New bed not found." };
-        }
+        if (newBed is null) return new ClientOperationResponse { Success = false, Error = "New bed not found." };
 
         if (newBed.HomeId != client.HomeId)
-        {
-            return new ClientOperationResponse { Success = false, Error = "Cannot transfer to a bed in a different home." };
-        }
+            return new ClientOperationResponse
+                { Success = false, Error = "Cannot transfer to a bed in a different home." };
 
         if (!newBed.IsActive)
-        {
             return new ClientOperationResponse { Success = false, Error = "Cannot transfer to an inactive bed." };
-        }
 
         if (newBed.Status == BedStatus.Occupied)
-        {
             return new ClientOperationResponse { Success = false, Error = "New bed is already occupied." };
-        }
 
         // Free up the old bed
         var oldBedLabel = client.Bed?.Label ?? "Unknown";
@@ -507,10 +414,7 @@ public sealed class ClientService : IClientService
     {
         ArgumentNullException.ThrowIfNull(homeIds);
 
-        if (homeIds.Count == 0)
-        {
-            return [];
-        }
+        if (homeIds.Count == 0) return [];
 
         var clients = await _dbContext.Clients
             .AsNoTracking()

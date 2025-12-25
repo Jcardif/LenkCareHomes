@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using LenkCareHomes.Api.Domain.Constants;
 using LenkCareHomes.Api.Models.Dashboard;
 using LenkCareHomes.Api.Services.Dashboard;
@@ -7,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LenkCareHomes.Api.Controllers;
 
 /// <summary>
-/// Controller for dashboard statistics operations.
+///     Controller for dashboard statistics operations.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -26,7 +27,7 @@ public sealed class DashboardController : ControllerBase
     }
 
     /// <summary>
-    /// Gets dashboard statistics for admin users.
+    ///     Gets dashboard statistics for admin users.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Admin dashboard statistics.</returns>
@@ -41,7 +42,7 @@ public sealed class DashboardController : ControllerBase
     }
 
     /// <summary>
-    /// Gets dashboard statistics for caregiver users.
+    ///     Gets dashboard statistics for caregiver users.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Caregiver dashboard statistics.</returns>
@@ -52,10 +53,7 @@ public sealed class DashboardController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId is null)
-        {
-            return Unauthorized();
-        }
+        if (currentUserId is null) return Unauthorized();
 
         var stats = await _dashboardService.GetCaregiverDashboardStatsAsync(currentUserId.Value, cancellationToken);
         return Ok(stats);
@@ -63,11 +61,8 @@ public sealed class DashboardController : ControllerBase
 
     private Guid? GetCurrentUserId()
     {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (Guid.TryParse(userIdClaim, out var userId))
-        {
-            return userId;
-        }
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(userIdClaim, out var userId)) return userId;
         return null;
     }
 }

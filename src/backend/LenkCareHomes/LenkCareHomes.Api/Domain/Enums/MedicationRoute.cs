@@ -1,62 +1,62 @@
 namespace LenkCareHomes.Api.Domain.Enums;
 
 /// <summary>
-/// Routes of medication administration.
+///     Routes of medication administration.
 /// </summary>
 public enum MedicationRoute
 {
     /// <summary>
-    /// Oral administration (by mouth).
+    ///     Oral administration (by mouth).
     /// </summary>
     Oral,
 
     /// <summary>
-    /// Sublingual administration (under the tongue).
+    ///     Sublingual administration (under the tongue).
     /// </summary>
     Sublingual,
 
     /// <summary>
-    /// Topical administration (applied to skin).
+    ///     Topical administration (applied to skin).
     /// </summary>
     Topical,
 
     /// <summary>
-    /// Inhalation (inhaled through mouth or nose).
+    ///     Inhalation (inhaled through mouth or nose).
     /// </summary>
     Inhalation,
 
     /// <summary>
-    /// Injection (intramuscular, subcutaneous, etc.).
+    ///     Injection (intramuscular, subcutaneous, etc.).
     /// </summary>
     Injection,
 
     /// <summary>
-    /// Transdermal (through skin patch).
+    ///     Transdermal (through skin patch).
     /// </summary>
     Transdermal,
 
     /// <summary>
-    /// Rectal administration.
+    ///     Rectal administration.
     /// </summary>
     Rectal,
 
     /// <summary>
-    /// Ophthalmic (eye drops/ointment).
+    ///     Ophthalmic (eye drops/ointment).
     /// </summary>
     Ophthalmic,
 
     /// <summary>
-    /// Otic (ear drops).
+    ///     Otic (ear drops).
     /// </summary>
     Otic,
 
     /// <summary>
-    /// Nasal (nasal spray/drops).
+    ///     Nasal (nasal spray/drops).
     /// </summary>
     Nasal,
 
     /// <summary>
-    /// Other route not listed.
+    ///     Other route not listed.
     /// </summary>
     Other
 }

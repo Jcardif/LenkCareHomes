@@ -1,24 +1,25 @@
+using System.Collections.Concurrent;
+using Azure;
+using Azure.Storage;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Azure.Storage.Sas;
-using Azure.Storage;
 using Microsoft.Extensions.Options;
-using System.Collections.Concurrent;
 
 namespace LenkCareHomes.Api.Services.Documents;
 
 /// <summary>
-/// Azure Blob Storage service for document storage operations.
-/// Supports both Azure Blob Storage and Azurite emulator for local development.
+///     Azure Blob Storage service for document storage operations.
+///     Supports both Azure Blob Storage and Azurite emulator for local development.
 /// </summary>
 public sealed class BlobStorageService : IBlobStorageService
 {
     private readonly BlobServiceClient _blobServiceClient;
-    private readonly BlobStorageSettings _settings;
-    private readonly ILogger<BlobStorageService> _logger;
-    private readonly bool _isEmulator;
-    private readonly StorageSharedKeyCredential? _sharedKeyCredential;
     private readonly ConcurrentDictionary<string, BlobContainerClient> _containerClients = new();
+    private readonly bool _isEmulator;
+    private readonly ILogger<BlobStorageService> _logger;
+    private readonly BlobStorageSettings _settings;
+    private readonly StorageSharedKeyCredential? _sharedKeyCredential;
 
     public BlobStorageService(
         IOptions<BlobStorageSettings> settings,
@@ -28,9 +29,8 @@ public sealed class BlobStorageService : IBlobStorageService
         _logger = logger;
 
         if (string.IsNullOrWhiteSpace(_settings.ConnectionString))
-        {
-            throw new InvalidOperationException("BlobStorage:ConnectionString is not configured. Please add it to your configuration.");
-        }
+            throw new InvalidOperationException(
+                "BlobStorage:ConnectionString is not configured. Please add it to your configuration.");
 
         // Detect if using Azurite emulator (devstoreaccount1 is the well-known emulator account)
         _isEmulator = _settings.ConnectionString.Contains("devstoreaccount1", StringComparison.OrdinalIgnoreCase);
@@ -46,27 +46,6 @@ public sealed class BlobStorageService : IBlobStorageService
                 "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==");
             _logger.LogInformation("Blob storage configured for Azurite emulator");
         }
-    }
-
-    /// <summary>
-    /// Gets or creates a container client for the specified container name.
-    /// Creates the container if it doesn't exist.
-    /// </summary>
-    private async Task<BlobContainerClient> GetContainerClientAsync(string containerName)
-    {
-        if (_containerClients.TryGetValue(containerName, out var existingClient))
-        {
-            return existingClient;
-        }
-
-        var client = _blobServiceClient.GetBlobContainerClient(containerName);
-        
-        // Create container if it doesn't exist
-        await client.CreateIfNotExistsAsync();
-        
-        _containerClients.TryAdd(containerName, client);
-        _logger.LogDebug("Created container client for {ContainerName}", containerName);
-        return client;
     }
 
     /// <inheritdoc />
@@ -167,25 +146,28 @@ public sealed class BlobStorageService : IBlobStorageService
     }
 
     /// <inheritdoc />
-    public async Task UploadBlobAsync(string blobPath, byte[] content, string contentType, string containerName = BlobContainers.Documents)
+    public async Task UploadBlobAsync(string blobPath, byte[] content, string contentType,
+        string containerName = BlobContainers.Documents)
     {
         var containerClient = await GetContainerClientAsync(containerName);
         var blobClient = containerClient.GetBlobClient(blobPath);
-        
+
         using var stream = new MemoryStream(content);
         await blobClient.UploadAsync(stream, new BlobHttpHeaders { ContentType = contentType });
-        
-        _logger.LogInformation("Uploaded blob {Container}/{BlobPath} ({Size} bytes)", containerName, blobPath, content.Length);
+
+        _logger.LogInformation("Uploaded blob {Container}/{BlobPath} ({Size} bytes)", containerName, blobPath,
+            content.Length);
     }
 
     /// <inheritdoc />
-    public async Task UploadBlobAsync(string blobPath, Stream content, string contentType, string containerName = BlobContainers.Documents)
+    public async Task UploadBlobAsync(string blobPath, Stream content, string contentType,
+        string containerName = BlobContainers.Documents)
     {
         var containerClient = await GetContainerClientAsync(containerName);
         var blobClient = containerClient.GetBlobClient(blobPath);
-        
+
         await blobClient.UploadAsync(content, new BlobHttpHeaders { ContentType = contentType });
-        
+
         _logger.LogInformation("Uploaded blob {Container}/{BlobPath}", containerName, blobPath);
     }
 
@@ -198,15 +180,17 @@ public sealed class BlobStorageService : IBlobStorageService
     }
 
     /// <inheritdoc />
-    public async Task<byte[]> DownloadBlobAsync(string blobPath, string containerName = BlobContainers.Documents, CancellationToken cancellationToken = default)
+    public async Task<byte[]> DownloadBlobAsync(string blobPath, string containerName = BlobContainers.Documents,
+        CancellationToken cancellationToken = default)
     {
         var containerClient = await GetContainerClientAsync(containerName);
         var blobClient = containerClient.GetBlobClient(blobPath);
-        
+
         using var stream = new MemoryStream();
         await blobClient.DownloadToAsync(stream, cancellationToken);
-        
-        _logger.LogInformation("Downloaded blob {Container}/{BlobPath} ({Size} bytes)", containerName, blobPath, stream.Length);
+
+        _logger.LogInformation("Downloaded blob {Container}/{BlobPath} ({Size} bytes)", containerName, blobPath,
+            stream.Length);
         return stream.ToArray();
     }
 
@@ -223,7 +207,7 @@ public sealed class BlobStorageService : IBlobStorageService
         foreach (var container in containersToDelete)
         {
             var containerClient = await GetContainerClientAsync(container);
-            
+
             try
             {
                 await foreach (var blobItem in containerClient.GetBlobsAsync())
@@ -232,39 +216,59 @@ public sealed class BlobStorageService : IBlobStorageService
                     await blobClient.DeleteIfExistsAsync();
                     deletedCount++;
                 }
+
                 _logger.LogWarning("Deleted blobs from container {Container}", container);
             }
-            catch (Azure.RequestFailedException ex) when (ex.Status == 404)
+            catch (RequestFailedException ex) when (ex.Status == 404)
             {
                 _logger.LogDebug("Container {Container} does not exist, skipping", container);
             }
         }
 
-        _logger.LogWarning("Deleted {Count} blobs total from {ContainerCount} containers", deletedCount, containersToDelete.Length);
+        _logger.LogWarning("Deleted {Count} blobs total from {ContainerCount} containers", deletedCount,
+            containersToDelete.Length);
         return deletedCount;
+    }
+
+    /// <summary>
+    ///     Gets or creates a container client for the specified container name.
+    ///     Creates the container if it doesn't exist.
+    /// </summary>
+    private async Task<BlobContainerClient> GetContainerClientAsync(string containerName)
+    {
+        if (_containerClients.TryGetValue(containerName, out var existingClient)) return existingClient;
+
+        var client = _blobServiceClient.GetBlobContainerClient(containerName);
+
+        // Create container if it doesn't exist
+        await client.CreateIfNotExistsAsync();
+
+        _containerClients.TryAdd(containerName, client);
+        _logger.LogDebug("Created container client for {ContainerName}", containerName);
+        return client;
     }
 }
 
 /// <summary>
-/// Configuration settings for Azure Blob Storage.
+///     Configuration settings for Azure Blob Storage.
 /// </summary>
 public sealed class BlobStorageSettings
 {
     public const string SectionName = "BlobStorage";
 
     /// <summary>
-    /// Gets or sets the Azure Blob Storage connection string.
-    /// This can be set via BlobStorage:ConnectionString or ConnectionStrings:blobs (Aspire).
+    ///     Gets or sets the Azure Blob Storage connection string.
+    ///     This can be set via BlobStorage:ConnectionString or ConnectionStrings:blobs (Aspire).
     /// </summary>
     public string ConnectionString { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the container name for documents.
+    ///     Gets or sets the container name for documents.
     /// </summary>
     public string ContainerName { get; set; } = "documents";
 
     /// <summary>
-    /// Gets or sets the maximum file size in bytes (default 50MB).
+    ///     Gets or sets the maximum file size in bytes (default 50MB).
     /// </summary>
     public long MaxFileSizeBytes { get; set; } = 50 * 1024 * 1024;
 }

@@ -9,12 +9,12 @@ using Microsoft.EntityFrameworkCore;
 namespace LenkCareHomes.Api.Services.Appointments;
 
 /// <summary>
-/// Service for appointment operations.
+///     Service for appointment operations.
 /// </summary>
 public sealed class AppointmentService : IAppointmentService
 {
-    private readonly ApplicationDbContext _context;
     private readonly IAuditLogService _auditLogService;
+    private readonly ApplicationDbContext _context;
     private readonly ILogger<AppointmentService> _logger;
 
     public AppointmentService(
@@ -44,13 +44,11 @@ public sealed class AppointmentService : IAppointmentService
             .FirstOrDefaultAsync(cancellationToken);
 
         if (client is null)
-        {
             return new AppointmentOperationResponse
             {
                 Success = false,
                 Error = "Client not found or is not active."
             };
-        }
 
         var appointment = new Appointment
         {
@@ -123,40 +121,19 @@ public sealed class AppointmentService : IAppointmentService
             .AsQueryable();
 
         // Apply home-scope for caregivers
-        if (allowedHomeIds is not null)
-        {
-            query = query.Where(a => allowedHomeIds.Contains(a.HomeId));
-        }
+        if (allowedHomeIds is not null) query = query.Where(a => allowedHomeIds.Contains(a.HomeId));
 
-        if (clientId.HasValue)
-        {
-            query = query.Where(a => a.ClientId == clientId.Value);
-        }
+        if (clientId.HasValue) query = query.Where(a => a.ClientId == clientId.Value);
 
-        if (homeId.HasValue)
-        {
-            query = query.Where(a => a.HomeId == homeId.Value);
-        }
+        if (homeId.HasValue) query = query.Where(a => a.HomeId == homeId.Value);
 
-        if (status.HasValue)
-        {
-            query = query.Where(a => a.Status == status.Value);
-        }
+        if (status.HasValue) query = query.Where(a => a.Status == status.Value);
 
-        if (appointmentType.HasValue)
-        {
-            query = query.Where(a => a.AppointmentType == appointmentType.Value);
-        }
+        if (appointmentType.HasValue) query = query.Where(a => a.AppointmentType == appointmentType.Value);
 
-        if (startDate.HasValue)
-        {
-            query = query.Where(a => a.ScheduledAt >= startDate.Value);
-        }
+        if (startDate.HasValue) query = query.Where(a => a.ScheduledAt >= startDate.Value);
 
-        if (endDate.HasValue)
-        {
-            query = query.Where(a => a.ScheduledAt <= endDate.Value);
-        }
+        if (endDate.HasValue) query = query.Where(a => a.ScheduledAt <= endDate.Value);
 
         var totalCount = await query.CountAsync(cancellationToken);
         var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
@@ -212,17 +189,11 @@ public sealed class AppointmentService : IAppointmentService
             .Include(a => a.CompletedBy)
             .Where(a => a.Id == appointmentId);
 
-        if (allowedHomeIds is not null)
-        {
-            query = query.Where(a => allowedHomeIds.Contains(a.HomeId));
-        }
+        if (allowedHomeIds is not null) query = query.Where(a => allowedHomeIds.Contains(a.HomeId));
 
         var appointment = await query.FirstOrDefaultAsync(cancellationToken);
 
-        if (appointment is null)
-        {
-            return null;
-        }
+        if (appointment is null) return null;
 
         return new AppointmentDto
         {
@@ -272,76 +243,42 @@ public sealed class AppointmentService : IAppointmentService
 
         var query = _context.Appointments.Where(a => a.Id == appointmentId);
 
-        if (allowedHomeIds is not null)
-        {
-            query = query.Where(a => allowedHomeIds.Contains(a.HomeId));
-        }
+        if (allowedHomeIds is not null) query = query.Where(a => allowedHomeIds.Contains(a.HomeId));
 
         var appointment = await query.FirstOrDefaultAsync(cancellationToken);
 
         if (appointment is null)
-        {
             return new AppointmentOperationResponse
             {
                 Success = false,
                 Error = "Appointment not found or access denied."
             };
-        }
 
         if (appointment.Status != AppointmentStatus.Scheduled)
-        {
             return new AppointmentOperationResponse
             {
                 Success = false,
                 Error = "Only scheduled appointments can be updated."
             };
-        }
 
         // Update fields
-        if (request.AppointmentType.HasValue)
-        {
-            appointment.AppointmentType = request.AppointmentType.Value;
-        }
+        if (request.AppointmentType.HasValue) appointment.AppointmentType = request.AppointmentType.Value;
 
-        if (!string.IsNullOrWhiteSpace(request.Title))
-        {
-            appointment.Title = request.Title;
-        }
+        if (!string.IsNullOrWhiteSpace(request.Title)) appointment.Title = request.Title;
 
-        if (request.ScheduledAt.HasValue)
-        {
-            appointment.ScheduledAt = request.ScheduledAt.Value;
-        }
+        if (request.ScheduledAt.HasValue) appointment.ScheduledAt = request.ScheduledAt.Value;
 
-        if (request.DurationMinutes.HasValue)
-        {
-            appointment.DurationMinutes = request.DurationMinutes.Value;
-        }
+        if (request.DurationMinutes.HasValue) appointment.DurationMinutes = request.DurationMinutes.Value;
 
-        if (request.Location is not null)
-        {
-            appointment.Location = request.Location;
-        }
+        if (request.Location is not null) appointment.Location = request.Location;
 
-        if (request.ProviderName is not null)
-        {
-            appointment.ProviderName = request.ProviderName;
-        }
+        if (request.ProviderName is not null) appointment.ProviderName = request.ProviderName;
 
-        if (request.ProviderPhone is not null)
-        {
-            appointment.ProviderPhone = request.ProviderPhone;
-        }
+        if (request.ProviderPhone is not null) appointment.ProviderPhone = request.ProviderPhone;
 
-        if (request.Notes is not null)
-        {
-            appointment.Notes = request.Notes;
-        }
+        if (request.Notes is not null) appointment.Notes = request.Notes;
 
-        if (request.TransportationNotes is not null)
-        {
-            appointment.TransportationNotes = request.TransportationNotes;
-        }
+        if (request.TransportationNotes is not null) appointment.TransportationNotes = request.TransportationNotes;
 
         appointment.UpdatedAt = DateTime.UtcNow;
 
@@ -385,30 +322,23 @@ public sealed class AppointmentService : IAppointmentService
     {
         var query = _context.Appointments.Where(a => a.Id == appointmentId);
 
-        if (allowedHomeIds is not null)
-        {
-            query = query.Where(a => allowedHomeIds.Contains(a.HomeId));
-        }
+        if (allowedHomeIds is not null) query = query.Where(a => allowedHomeIds.Contains(a.HomeId));
 
         var appointment = await query.FirstOrDefaultAsync(cancellationToken);
 
         if (appointment is null)
-        {
             return new AppointmentOperationResponse
             {
                 Success = false,
                 Error = "Appointment not found or access denied."
             };
-        }
 
         if (appointment.Status != AppointmentStatus.Scheduled)
-        {
             return new AppointmentOperationResponse
             {
                 Success = false,
                 Error = "Only scheduled appointments can be completed."
             };
-        }
 
         appointment.Status = AppointmentStatus.Completed;
         appointment.OutcomeNotes = request?.OutcomeNotes;
@@ -456,38 +386,29 @@ public sealed class AppointmentService : IAppointmentService
     {
         var query = _context.Appointments.Where(a => a.Id == appointmentId);
 
-        if (allowedHomeIds is not null)
-        {
-            query = query.Where(a => allowedHomeIds.Contains(a.HomeId));
-        }
+        if (allowedHomeIds is not null) query = query.Where(a => allowedHomeIds.Contains(a.HomeId));
 
         var appointment = await query.FirstOrDefaultAsync(cancellationToken);
 
         if (appointment is null)
-        {
             return new AppointmentOperationResponse
             {
                 Success = false,
                 Error = "Appointment not found or access denied."
             };
-        }
 
         if (appointment.Status != AppointmentStatus.Scheduled)
-        {
             return new AppointmentOperationResponse
             {
                 Success = false,
                 Error = "Only scheduled appointments can be cancelled."
             };
-        }
 
         appointment.Status = AppointmentStatus.Cancelled;
         if (!string.IsNullOrWhiteSpace(request?.CancellationReason))
-        {
             appointment.Notes = string.IsNullOrWhiteSpace(appointment.Notes)
                 ? $"Cancelled: {request.CancellationReason}"
                 : $"{appointment.Notes}\n\nCancelled: {request.CancellationReason}";
-        }
         appointment.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -530,38 +451,29 @@ public sealed class AppointmentService : IAppointmentService
     {
         var query = _context.Appointments.Where(a => a.Id == appointmentId);
 
-        if (allowedHomeIds is not null)
-        {
-            query = query.Where(a => allowedHomeIds.Contains(a.HomeId));
-        }
+        if (allowedHomeIds is not null) query = query.Where(a => allowedHomeIds.Contains(a.HomeId));
 
         var appointment = await query.FirstOrDefaultAsync(cancellationToken);
 
         if (appointment is null)
-        {
             return new AppointmentOperationResponse
             {
                 Success = false,
                 Error = "Appointment not found or access denied."
             };
-        }
 
         if (appointment.Status != AppointmentStatus.Scheduled)
-        {
             return new AppointmentOperationResponse
             {
                 Success = false,
                 Error = "Only scheduled appointments can be marked as no-show."
             };
-        }
 
         appointment.Status = AppointmentStatus.NoShow;
         if (!string.IsNullOrWhiteSpace(request?.Notes))
-        {
             appointment.Notes = string.IsNullOrWhiteSpace(appointment.Notes)
                 ? $"No-show: {request.Notes}"
                 : $"{appointment.Notes}\n\nNo-show: {request.Notes}";
-        }
         appointment.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -606,46 +518,35 @@ public sealed class AppointmentService : IAppointmentService
 
         var query = _context.Appointments.Where(a => a.Id == appointmentId);
 
-        if (allowedHomeIds is not null)
-        {
-            query = query.Where(a => allowedHomeIds.Contains(a.HomeId));
-        }
+        if (allowedHomeIds is not null) query = query.Where(a => allowedHomeIds.Contains(a.HomeId));
 
         var appointment = await query.FirstOrDefaultAsync(cancellationToken);
 
         if (appointment is null)
-        {
             return new AppointmentOperationResponse
             {
                 Success = false,
                 Error = "Appointment not found or access denied."
             };
-        }
 
         if (appointment.Status != AppointmentStatus.Scheduled)
-        {
             return new AppointmentOperationResponse
             {
                 Success = false,
                 Error = "Only scheduled appointments can be rescheduled."
             };
-        }
 
         var previousDate = appointment.ScheduledAt;
         appointment.Status = AppointmentStatus.Rescheduled;
         appointment.ScheduledAt = request.NewScheduledAt;
         if (!string.IsNullOrWhiteSpace(request.Notes))
-        {
             appointment.Notes = string.IsNullOrWhiteSpace(appointment.Notes)
                 ? $"Rescheduled from {previousDate:g}: {request.Notes}"
                 : $"{appointment.Notes}\n\nRescheduled from {previousDate:g}: {request.Notes}";
-        }
         else
-        {
             appointment.Notes = string.IsNullOrWhiteSpace(appointment.Notes)
                 ? $"Rescheduled from {previousDate:g}"
                 : $"{appointment.Notes}\n\nRescheduled from {previousDate:g}";
-        }
         // Reset status to Scheduled after rescheduling since it's a new scheduled time
         appointment.Status = AppointmentStatus.Scheduled;
         appointment.UpdatedAt = DateTime.UtcNow;
@@ -690,22 +591,18 @@ public sealed class AppointmentService : IAppointmentService
             .FirstOrDefaultAsync(a => a.Id == appointmentId, cancellationToken);
 
         if (appointment is null)
-        {
             return new AppointmentOperationResponse
             {
                 Success = false,
                 Error = "Appointment not found."
             };
-        }
 
         if (appointment.Status != AppointmentStatus.Scheduled)
-        {
             return new AppointmentOperationResponse
             {
                 Success = false,
                 Error = "Only scheduled appointments can be deleted."
             };
-        }
 
         _context.Appointments.Remove(appointment);
         await _context.SaveChangesAsync(cancellationToken);
@@ -748,10 +645,7 @@ public sealed class AppointmentService : IAppointmentService
             .Where(a => a.Status == AppointmentStatus.Scheduled)
             .Where(a => a.ScheduledAt >= now && a.ScheduledAt <= endDate);
 
-        if (allowedHomeIds is not null)
-        {
-            query = query.Where(a => allowedHomeIds.Contains(a.HomeId));
-        }
+        if (allowedHomeIds is not null) query = query.Where(a => allowedHomeIds.Contains(a.HomeId));
 
         return await query
             .OrderBy(a => a.ScheduledAt)
@@ -784,15 +678,9 @@ public sealed class AppointmentService : IAppointmentService
             .Include(a => a.Home)
             .Where(a => a.ClientId == clientId);
 
-        if (allowedHomeIds is not null)
-        {
-            query = query.Where(a => allowedHomeIds.Contains(a.HomeId));
-        }
+        if (allowedHomeIds is not null) query = query.Where(a => allowedHomeIds.Contains(a.HomeId));
 
-        if (!includeCompleted)
-        {
-            query = query.Where(a => a.Status == AppointmentStatus.Scheduled);
-        }
+        if (!includeCompleted) query = query.Where(a => a.Status == AppointmentStatus.Scheduled);
 
         return await query
             .OrderByDescending(a => a.ScheduledAt)

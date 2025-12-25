@@ -1,7 +1,7 @@
 namespace LenkCareHomes.Api.Models.CareLog;
 
 /// <summary>
-/// DTO for ROM log information.
+///     DTO for ROM log information.
 /// </summary>
 public sealed record ROMLogDto
 {
@@ -18,7 +18,7 @@ public sealed record ROMLogDto
 }
 
 /// <summary>
-/// Request model for creating a ROM log entry.
+///     Request model for creating a ROM log entry.
 /// </summary>
 public sealed record CreateROMLogRequest
 {
@@ -30,7 +30,7 @@ public sealed record CreateROMLogRequest
 }
 
 /// <summary>
-/// Response model for ROM log operations.
+///     Response model for ROM log operations.
 /// </summary>
 public sealed record ROMLogOperationResponse
 {

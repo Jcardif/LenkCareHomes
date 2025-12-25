@@ -3,7 +3,7 @@ using LenkCareHomes.Api.Domain.Enums;
 namespace LenkCareHomes.Api.Models.CareLog;
 
 /// <summary>
-/// DTO for ADL log information.
+///     DTO for ADL log information.
 /// </summary>
 public sealed record ADLLogDto
 {
@@ -24,7 +24,7 @@ public sealed record ADLLogDto
 }
 
 /// <summary>
-/// Request model for creating an ADL log entry.
+///     Request model for creating an ADL log entry.
 /// </summary>
 public sealed record CreateADLLogRequest
 {
@@ -39,7 +39,7 @@ public sealed record CreateADLLogRequest
 }
 
 /// <summary>
-/// Response model for ADL log operations.
+///     Response model for ADL log operations.
 /// </summary>
 public sealed record ADLLogOperationResponse
 {

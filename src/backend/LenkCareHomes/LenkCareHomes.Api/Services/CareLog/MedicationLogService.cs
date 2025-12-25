@@ -8,12 +8,12 @@ using Microsoft.EntityFrameworkCore;
 namespace LenkCareHomes.Api.Services.CareLog;
 
 /// <summary>
-/// Service implementation for medication log operations.
+///     Service implementation for medication log operations.
 /// </summary>
 public sealed class MedicationLogService : IMedicationLogService
 {
-    private readonly ApplicationDbContext _dbContext;
     private readonly IAuditLogService _auditService;
+    private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<MedicationLogService> _logger;
 
     public MedicationLogService(
@@ -38,22 +38,18 @@ public sealed class MedicationLogService : IMedicationLogService
 
         // Validate required fields
         if (string.IsNullOrWhiteSpace(request.MedicationName))
-        {
             return new MedicationLogOperationResponse
             {
                 Success = false,
                 Error = "Medication name is required."
             };
-        }
 
         if (string.IsNullOrWhiteSpace(request.Dosage))
-        {
             return new MedicationLogOperationResponse
             {
                 Success = false,
                 Error = "Dosage is required."
             };
-        }
 
         // Verify client exists
         var client = await _dbContext.Clients
@@ -61,13 +57,11 @@ public sealed class MedicationLogService : IMedicationLogService
             .FirstOrDefaultAsync(c => c.Id == clientId, cancellationToken);
 
         if (client is null)
-        {
             return new MedicationLogOperationResponse
             {
                 Success = false,
                 Error = "Client not found."
             };
-        }
 
         var medicationLog = new MedicationLog
         {
@@ -126,15 +120,9 @@ public sealed class MedicationLogService : IMedicationLogService
             .Include(m => m.Caregiver)
             .Where(m => m.ClientId == clientId);
 
-        if (fromDate.HasValue)
-        {
-            query = query.Where(m => m.Timestamp >= fromDate.Value);
-        }
+        if (fromDate.HasValue) query = query.Where(m => m.Timestamp >= fromDate.Value);
 
-        if (toDate.HasValue)
-        {
-            query = query.Where(m => m.Timestamp <= toDate.Value);
-        }
+        if (toDate.HasValue) query = query.Where(m => m.Timestamp <= toDate.Value);
 
         var logs = await query
             .OrderByDescending(m => m.Timestamp)

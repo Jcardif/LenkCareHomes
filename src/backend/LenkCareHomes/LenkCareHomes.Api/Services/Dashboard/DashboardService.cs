@@ -1,7 +1,6 @@
 using LenkCareHomes.Api.Data;
 using LenkCareHomes.Api.Domain.Constants;
 using LenkCareHomes.Api.Domain.Enums;
-using LenkCareHomes.Api.Models.Appointments;
 using LenkCareHomes.Api.Models.Dashboard;
 using LenkCareHomes.Api.Services.Appointments;
 using Microsoft.EntityFrameworkCore;
@@ -9,12 +8,12 @@ using Microsoft.EntityFrameworkCore;
 namespace LenkCareHomes.Api.Services.Dashboard;
 
 /// <summary>
-/// Service implementation for dashboard statistics operations.
+///     Service implementation for dashboard statistics operations.
 /// </summary>
 public sealed class DashboardService : IDashboardService
 {
-    private readonly ApplicationDbContext _dbContext;
     private readonly IAppointmentService _appointmentService;
+    private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<DashboardService> _logger;
 
     public DashboardService(
@@ -86,16 +85,10 @@ public sealed class DashboardService : IDashboardService
             .Select(c =>
             {
                 var thisYearBirthday = new DateTime(today.Year, c.DateOfBirth.Month, c.DateOfBirth.Day);
-                if (thisYearBirthday < today)
-                {
-                    thisYearBirthday = thisYearBirthday.AddYears(1);
-                }
+                if (thisYearBirthday < today) thisYearBirthday = thisYearBirthday.AddYears(1);
                 var daysUntil = (thisYearBirthday - today).Days;
                 var age = today.Year - c.DateOfBirth.Year;
-                if (thisYearBirthday > today.AddDays(30))
-                {
-                    return null;
-                }
+                if (thisYearBirthday > today.AddDays(30)) return null;
                 return new { Client = c, DaysUntil = daysUntil, Age = age };
             })
             .Where(x => x is not null && x.DaysUntil <= 30)
@@ -124,9 +117,9 @@ public sealed class DashboardService : IDashboardService
 
         // Get upcoming appointments (next 7 days)
         var upcomingAppointments = await _appointmentService.GetUpcomingAppointmentsAsync(
-            days: 7,
-            limit: 10,
-            allowedHomeIds: null, // Admin sees all homes
+            7,
+            10,
+            null, // Admin sees all homes
             cancellationToken);
 
         return new AdminDashboardStats
@@ -159,7 +152,6 @@ public sealed class DashboardService : IDashboardService
             .ToListAsync(cancellationToken);
 
         if (assignedHomeIds.Count == 0)
-        {
             return new CaregiverDashboardStats
             {
                 AssignedHomesCount = 0,
@@ -168,7 +160,6 @@ public sealed class DashboardService : IDashboardService
                 Clients = [],
                 UpcomingAppointments = []
             };
-        }
 
         // Get home details
         var homes = await _dbContext.Homes
@@ -212,9 +203,9 @@ public sealed class DashboardService : IDashboardService
 
         // Get upcoming appointments for assigned homes
         var upcomingAppointments = await _appointmentService.GetUpcomingAppointmentsAsync(
-            days: 7,
-            limit: 10,
-            allowedHomeIds: assignedHomeIds,
+            7,
+            10,
+            assignedHomeIds,
             cancellationToken);
 
         return new CaregiverDashboardStats
