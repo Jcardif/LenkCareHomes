@@ -1,4 +1,4 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.0.2">
+<Project Sdk="Aspire.AppHost.Sdk/13.1.0">
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -10,15 +10,15 @@
 
     <ItemGroup>
         <!-- Aspire 13 includes Aspire.Hosting.AppHost automatically via SDK -->
-        <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.0.2"/>
-        <PackageReference Include="Aspire.Hosting.Python" Version="13.0.2"/>
+        <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.1.0" />
+        <PackageReference Include="Aspire.Hosting.Python" Version="13.1.0" />
         <!-- Docker container hosting for local development -->
-        <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.0.2"/>
-        <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.0.2"/>
+        <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.1.0" />
+        <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.1.0" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\LenkCareHomes.Api\LenkCareHomes.Api.csproj"/>
+        <ProjectReference Include="..\LenkCareHomes.Api\LenkCareHomes.Api.csproj" />
     </ItemGroup>
 
 </Project>

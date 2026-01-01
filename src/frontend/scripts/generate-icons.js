@@ -56,7 +56,7 @@ async function generateFaviconICO() {
   console.log('\n🔷 Generating favicon.ico (multi-size)...\n');
 
   try {
-    const toIco = require('to-ico');
+    const pngToIco = require('png-to-ico');
     
     // Generate PNG buffers at different sizes
     const sizes = [16, 32, 48];
@@ -74,13 +74,13 @@ async function generateFaviconICO() {
     );
 
     // Convert to ICO
-    const icoBuffer = await toIco(pngBuffers);
+    const icoBuffer = await pngToIco(pngBuffers);
     fs.writeFileSync(path.join(PUBLIC_DIR, 'favicon.ico'), icoBuffer);
     
     console.log('  ✅ favicon.ico (16x16, 32x32, 48x48)');
   } catch (error) {
     console.error('  ❌ Failed to generate favicon.ico:', error.message);
-    console.log('     Install dependencies: npm install to-ico');
+    console.log('     Install dependencies: npm install png-to-ico');
   }
 }
 
