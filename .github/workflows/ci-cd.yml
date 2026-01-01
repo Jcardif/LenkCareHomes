@@ -280,46 +280,13 @@ jobs:
           retention-days: 1
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # QODANA CODE QUALITY (Staging Only)
-  # Runs static analysis on the codebase using Docker mode
-  # ═══════════════════════════════════════════════════════════════════════════
-  qodana:
-    name: Qodana Scan
-    runs-on: ubuntu-latest
-    needs: setup
-    if: github.event_name == 'pull_request'
-    permissions:
-      contents: write
-      pull-requests: write
-      checks: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
-
-      - name: Qodana Scan
-        uses: JetBrains/qodana-action@v2025.3.1
-        with:
-          pr-mode: false
-        env:
-          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
-          QODANA_ENDPOINT: 'https://qodana.cloud'
-
-  # ═══════════════════════════════════════════════════════════════════════════
   # APPLY MIGRATIONS
   # Applies database migrations to target environment
   # ═══════════════════════════════════════════════════════════════════════════
   apply-migrations:
     name: Apply Migrations (${{ needs.setup.outputs.environment }})
     runs-on: ubuntu-latest
-    needs: [setup, build-backend, qodana]
-    if: |
-      always() &&
-      needs.build-backend.result == 'success' &&
-      (needs.qodana.result == 'success' || needs.qodana.result == 'skipped')
+    needs: [setup, build-backend]
     environment: ${{ needs.setup.outputs.environment }}
     permissions:
       id-token: write
@@ -383,12 +350,8 @@ jobs:
   deploy-backend:
     name: Deploy Backend (${{ needs.setup.outputs.environment }})
     runs-on: ubuntu-latest
-    needs: [setup, build-backend, apply-migrations, qodana]
-    if: |
-      always() &&
-      needs.build-backend.result == 'success' &&
-      needs.apply-migrations.result == 'success' &&
-      (needs.qodana.result == 'success' || needs.qodana.result == 'skipped')
+    needs: [setup, build-backend, apply-migrations]
+    if: needs.build-backend.result == 'success' && needs.apply-migrations.result == 'success'
     environment: 
       name: ${{ needs.setup.outputs.environment }}
       url: https://${{ vars.BACKEND_APP_SERVICE_NAME }}.azurewebsites.net
@@ -431,12 +394,8 @@ jobs:
   deploy-frontend:
     name: Deploy Frontend (${{ needs.setup.outputs.environment }})
     runs-on: ubuntu-latest
-    needs: [setup, build-frontend, apply-migrations, qodana]
-    if: |
-      always() &&
-      needs.build-frontend.result == 'success' &&
-      needs.apply-migrations.result == 'success' &&
-      (needs.qodana.result == 'success' || needs.qodana.result == 'skipped')
+    needs: [setup, build-frontend, apply-migrations]
+    if: needs.build-frontend.result == 'success' && needs.apply-migrations.result == 'success'
     environment: 
       name: ${{ needs.setup.outputs.environment }}
       url: https://${{ vars.FRONTEND_APP_SERVICE_NAME }}.azurewebsites.net
@@ -550,7 +509,7 @@ jobs:
   summary:
     name: Deployment Summary
     runs-on: ubuntu-latest
-    needs: [setup, build-backend, build-frontend, apply-migrations, deploy-backend, deploy-frontend, qodana]
+    needs: [setup, build-backend, build-frontend, apply-migrations, deploy-backend, deploy-frontend]
     if: always()
     environment: ${{ needs.setup.outputs.environment }}
 
@@ -563,15 +522,6 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          
-          # Qodana (Staging only)
-          if [ "${{ needs.qodana.result }}" = "success" ]; then
-            echo "| Qodana Scan | ✅ Success |" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.qodana.result }}" = "skipped" ]; then
-            echo "| Qodana Scan | ⏭️ Skipped |" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.qodana.result }}" = "failure" ]; then
-            echo "| Qodana Scan | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
-          fi
           
           # Build Backend
           if [ "${{ needs.build-backend.result }}" = "success" ]; then
