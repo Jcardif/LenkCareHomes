@@ -312,7 +312,7 @@ jobs:
       - name: Qodana Scan
         uses: JetBrains/qodana-action@v2025.3.1
         with:
-          args: --linter,qodana-dotnet,--within-docker,false
+          args: --linter,qodana-cdnet,--within-docker,false
           pr-mode: false
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
