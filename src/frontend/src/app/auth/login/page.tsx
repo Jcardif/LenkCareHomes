@@ -7,7 +7,7 @@ import { Form, Input, Button, Typography, Divider, Alert, Spin, Grid } from 'ant
 const { useBreakpoint } = Grid;
 import { KeyOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { useAuth } from '@/contexts/AuthContext';
-import { passkeyApi, getUserFriendlyError } from '@/lib/api';
+import { passkeyApi, getUserFriendlyError, API_BASE_URL } from '@/lib/api';
 import {
   isWebAuthnSupported,
   prepareCredentialRequestOptions,
@@ -64,7 +64,7 @@ function LoginContent() {
     setEmail(values.email);
 
     try {
-      const result = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/login`, {
+      const result = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),
@@ -181,7 +181,7 @@ function LoginContent() {
     setError(null);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/mfa/verify-backup`, {
+      const response = await fetch(`${API_BASE_URL}/auth/mfa/verify-backup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, backupCode: values.backupCode }),

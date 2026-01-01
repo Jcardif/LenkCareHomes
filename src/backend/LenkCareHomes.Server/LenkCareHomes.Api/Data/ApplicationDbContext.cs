@@ -1,5 +1,6 @@
 using LenkCareHomes.Api.Domain.Entities;
 using LenkCareHomes.Api.Domain.Enums;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -141,6 +142,32 @@ public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser, Ap
         {
             entity.ToTable("Roles");
             entity.Property(r => r.Description).HasMaxLength(500);
+        });
+
+        // Configure remaining Identity table names for clarity
+        builder.Entity<IdentityRoleClaim<Guid>>(entity =>
+        {
+            entity.ToTable("RoleClaims");
+        });
+
+        builder.Entity<IdentityUserClaim<Guid>>(entity =>
+        {
+            entity.ToTable("UserClaims");
+        });
+
+        builder.Entity<IdentityUserLogin<Guid>>(entity =>
+        {
+            entity.ToTable("UserLogins");
+        });
+
+        builder.Entity<IdentityUserRole<Guid>>(entity =>
+        {
+            entity.ToTable("UserRoles");
+        });
+
+        builder.Entity<IdentityUserToken<Guid>>(entity =>
+        {
+            entity.ToTable("UserTokens");
         });
 
         // Configure Home entity

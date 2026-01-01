@@ -128,7 +128,7 @@ aspire --version
 The only Azure service needed for development is **Azure Communication Services** for email. If not configured, emails are logged to console instead.
 
 ```bash
-cd src/backend/LenkCareHomes/LenkCareHomes.Api
+cd src/backend/LenkCareHomes.Server/LenkCareHomes.Api
 
 # Set email secrets (optional)
 dotnet user-secrets set "Email:ConnectionString" "<your-acs-connection-string>"
@@ -138,7 +138,7 @@ dotnet user-secrets set "Email:SenderAddress" "<your-verified-sender-email>"
 ### 4. Start the Application
 
 ```bash
-cd src/backend/LenkCareHomes
+cd src/backend/LenkCareHomes.Server
 
 # Start with Aspire (recommended)
 aspire run
@@ -228,7 +228,7 @@ For local development, **Aspire handles most configuration automatically** using
 #### Email Configuration (Optional)
 
 ```bash
-cd src/backend/LenkCareHomes/LenkCareHomes.Api
+cd src/backend/LenkCareHomes.Server/LenkCareHomes.Api
 dotnet user-secrets init
 
 # Set email secrets (if you want actual emails instead of console logging)
@@ -310,7 +310,7 @@ LenkCareHomes/
 │
 ├── 📂 src/
 │   ├── 📂 backend/
-│   │   └── LenkCareHomes/
+│   │   └── LenkCareHomes.Server/
 │   │       ├── LenkCareHomes.Api/           # Main API
 │   │       │   ├── Controllers/             # REST endpoints
 │   │       │   ├── Domain/                  # Entities, enums
@@ -407,7 +407,7 @@ Visit `/help#accessibility` for our full accessibility statement.
 
 ```bash
 # Backend tests
-cd src/backend/LenkCareHomes
+cd src/backend/LenkCareHomes.Server
 dotnet test
 
 # Frontend tests
@@ -418,7 +418,7 @@ npm test
 ### Database Migrations
 
 ```bash
-cd src/backend/LenkCareHomes/LenkCareHomes.Api
+cd src/backend/LenkCareHomes.Server/LenkCareHomes.Api
 
 # Create migration
 dotnet ef migrations add <MigrationName>

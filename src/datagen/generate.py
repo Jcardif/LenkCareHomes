@@ -30,7 +30,7 @@ from document_generators import DocumentGenerator
 
 
 # Output configuration - directly to API project's SyntheticData folder
-OUTPUT_DIR = Path(__file__).parent.parent / "backend" / "LenkCareHomes" / "LenkCareHomes.Api" / "SyntheticData"
+OUTPUT_DIR = Path(__file__).parent.parent / "backend" / "LenkCareHomes.Server" / "LenkCareHomes.Api" / "SyntheticData"
 # Source images directory
 IMAGES_DIR = Path(__file__).parent / "images"
 

@@ -26,8 +26,8 @@
     "baseline-browser-mapping": "^2.8.32",
     "eslint": "^9",
     "eslint-config-next": "^16.0.7",
+    "png-to-ico": "^3.0.1",
     "sharp": "^0.34.5",
-    "to-ico": "^1.1.5",
     "typescript": "^5"
   }
 }

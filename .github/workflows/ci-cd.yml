@@ -50,6 +50,7 @@ on:
       - 'docs/**'
       - '.github/instructions/**'
       - 'images/**'
+      - '.gitignore'
 
   # Merge to main - deploy to production
   push:
@@ -67,7 +68,7 @@ on:
 env:
   DOTNET_VERSION: '10.x'
   NODE_VERSION: '24.x'
-  BACKEND_WORKING_DIR: 'src/backend/LenkCareHomes/LenkCareHomes.Api'
+  BACKEND_WORKING_DIR: 'src/backend/LenkCareHomes.Server/LenkCareHomes.Api'
   FRONTEND_WORKING_DIR: 'src/frontend'
   # Disable .NET CLI telemetry
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
@@ -244,6 +245,15 @@ jobs:
       - name: Install dependencies
         working-directory: ${{ env.FRONTEND_WORKING_DIR }}
         run: npm ci
+
+      - name: Validate required environment variables
+        run: |
+          if [ -z "${{ secrets.NEXT_PUBLIC_API_URL }}" ]; then
+            echo "::error::NEXT_PUBLIC_API_URL secret is not set. This is required for production builds."
+            echo "Please configure the NEXT_PUBLIC_API_URL secret in GitHub repository settings."
+            exit 1
+          fi
+          echo "✓ NEXT_PUBLIC_API_URL is configured"
 
       - name: Build
         working-directory: ${{ env.FRONTEND_WORKING_DIR }}

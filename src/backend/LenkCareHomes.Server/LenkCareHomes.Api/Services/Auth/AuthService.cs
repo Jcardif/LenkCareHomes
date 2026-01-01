@@ -805,8 +805,9 @@ public sealed class AuthSettings
 
     /// <summary>
     ///     Gets or sets the frontend base URL for generating links.
+    ///     This must be configured in appsettings or environment variables.
     /// </summary>
-    public string FrontendBaseUrl { get; set; } = "http://localhost:3000";
+    public string FrontendBaseUrl { get; set; } = string.Empty;
 
     /// <summary>
     ///     Gets or sets the invitation token expiration in hours.
