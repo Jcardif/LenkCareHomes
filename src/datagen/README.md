@@ -35,7 +35,7 @@ python generate.py
 ```
 
 This will create JSON files in the API project's `SyntheticData` folder:
-`src/backend/LenkCareHomes/LenkCareHomes.Api/SyntheticData/`
+`src/backend/LenkCareHomes.Server/LenkCareHomes.Api/SyntheticData/`
 
 Generated files:
 
@@ -56,7 +56,7 @@ Generated files:
 - `all_data.json` - Combined file with all data
 
 Additionally, PDF documents are generated in:
-`src/backend/LenkCareHomes/LenkCareHomes.Api/SyntheticData/documents/`
+`src/backend/LenkCareHomes.Server/LenkCareHomes.Api/SyntheticData/documents/`
 
 ### Loading Data
 

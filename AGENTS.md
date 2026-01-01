@@ -9,7 +9,7 @@ LenkCare Homes is a HIPAA-compliant web application for managing adult family ho
 | Component | Technology | Location |
 |-----------|------------|----------|
 | Frontend | Next.js 16 + React 19 | `src/frontend/` |
-| Backend | .NET 10 Web API + Aspire | `src/backend/LenkCareHomes/` |
+| Backend | .NET 10 Web API + Aspire | `src/backend/LenkCareHomes.Server/` |
 | AppHost | Aspire orchestrator | `LenkCareHomes.AppHost/` |
 | ServiceDefaults | Shared Aspire config | `LenkCareHomes.ServiceDefaults/` |
 | Target DB (PHI) | Azure SQL | — |
@@ -65,7 +65,7 @@ Azurite and Cosmos DB Emulator containers work normally on ARM64.
 The only Azure service required in development is **Azure Communication Services** for email. Configure it via user secrets:
 
 ```powershell
-cd src/backend/LenkCareHomes/LenkCareHomes.Api
+cd src/backend/LenkCareHomes.Server/LenkCareHomes.Api
 dotnet user-secrets set "Email:ConnectionString" "<your-acs-connection-string>"
 dotnet user-secrets set "Email:SenderAddress" "<your-verified-sender-email>"
 ```
@@ -77,7 +77,7 @@ If email is not configured, emails will be logged to console instead of sent.
 ## Setup Commands
 
 ```powershell
-# Backend - run from src/backend/LenkCareHomes/
+# Backend - run from src/backend/LenkCareHomes.Server/
 dotnet run --project LenkCareHomes.AppHost  # Starts Aspire dashboard + Docker containers + API
 
 # Or use Aspire CLI (Aspire 13+)
@@ -92,7 +92,7 @@ npm run lint     # ESLint checks
 
 ### Backend tips
 
-- `dotnet restore` at the solution root (`src/backend/LenkCareHomes/`) to prime packages.
+- `dotnet restore` at the solution root (`src/backend/LenkCareHomes.Server/`) to prime packages.
 - `dotnet run --project LenkCareHomes.AppHost` or `aspire run` boots the Aspire dashboard, Docker containers (SQL Server, Azurite, Cosmos DB Emulator), API, and frontend.
 - Aspire 13 automatically handles npm package installation for the frontend via `AddJavaScriptApp()`.
 - Aspire ensures containers are running and healthy before starting the API.
