@@ -50,6 +50,7 @@ on:
       - 'docs/**'
       - '.github/instructions/**'
       - 'images/**'
+      - '.gitignore'
 
   # Merge to main - deploy to production
   push:
