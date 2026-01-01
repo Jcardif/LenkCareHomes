@@ -281,7 +281,7 @@ jobs:
 
   # ═══════════════════════════════════════════════════════════════════════════
   # QODANA CODE QUALITY (Staging Only)
-  # Runs static analysis on the codebase
+  # Runs static analysis on the codebase using native mode (no Docker)
   # ═══════════════════════════════════════════════════════════════════════════
   qodana:
     name: Qodana Scan
@@ -300,12 +300,22 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
-      - name: Qodana Scan
-        uses: JetBrains/qodana-action@v2025.2
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
         with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        working-directory: ${{ env.BACKEND_WORKING_DIR }}
+        run: dotnet restore
+
+      - name: Qodana Scan
+        uses: JetBrains/qodana-action@v2025.3.1
+        with:
+          args: --linter,qodana-dotnet,--within-docker,false
           pr-mode: false
         env:
-          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_992962058 }}
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
           QODANA_ENDPOINT: 'https://qodana.cloud'
 
   # ═══════════════════════════════════════════════════════════════════════════
