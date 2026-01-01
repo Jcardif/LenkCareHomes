@@ -427,3 +427,5 @@ infra/keyvault/secrets.txt
 
 # .venv files for Python projects
 .venv/
+
+.idea/
