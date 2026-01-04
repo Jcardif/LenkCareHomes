@@ -327,11 +327,51 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Apply migrations
-        if: steps.check-migrations.outputs.has_migrations == 'true'
+        if: steps.check-migrations.outputs.has_migrations == 'true' && needs.setup.outputs.environment != 'staging'
         uses: azure/sql-action@v2.3
         with:
           connection-string: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
           path: ./migrations/migration-script.sql
+
+      # Staging uses free-tier SQL which may need cold start wake-up - retry up to 3 times
+      - name: Apply migrations (with retries for staging)
+        if: steps.check-migrations.outputs.has_migrations == 'true' && needs.setup.outputs.environment == 'staging'
+        env:
+          CONNECTION_STRING: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+        run: |
+          MAX_RETRIES=3
+          RETRY_DELAY=30
+          
+          for attempt in $(seq 1 $MAX_RETRIES); do
+            echo "Attempt $attempt of $MAX_RETRIES..."
+            
+            # Install sqlcmd if not present
+            if ! command -v sqlcmd &> /dev/null; then
+              curl https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
+              sudo add-apt-repository "$(wget -qO- https://packages.microsoft.com/config/ubuntu/22.04/prod.list)"
+              sudo apt-get update
+              sudo apt-get install -y sqlcmd
+            fi
+            
+            # Try to run the migration
+            if sqlcmd -C -S "$(echo $CONNECTION_STRING | grep -oP 'Server=\K[^;]+')" \
+                      -d "$(echo $CONNECTION_STRING | grep -oP 'Initial Catalog=\K[^;]+')" \
+                      -U "$(echo $CONNECTION_STRING | grep -oP 'User ID=\K[^;]+')" \
+                      -P "$(echo $CONNECTION_STRING | grep -oP 'Password=\K[^;]+')" \
+                      -i ./migrations/migration-script.sql; then
+              echo "✅ Migration succeeded on attempt $attempt"
+              exit 0
+            fi
+            
+            if [ $attempt -lt $MAX_RETRIES ]; then
+              echo "⏳ Attempt $attempt failed. Waiting ${RETRY_DELAY}s for SQL server cold start..."
+              sleep $RETRY_DELAY
+              RETRY_DELAY=$((RETRY_DELAY * 2))  # Exponential backoff
+            fi
+          done
+          
+          echo "❌ All $MAX_RETRIES attempts failed"
+          exit 1
 
       - name: Migration summary
         run: |

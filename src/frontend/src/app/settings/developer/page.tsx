@@ -47,9 +47,9 @@ import {
   type LoadSyntheticDataResult,
   type ClearDataResult,
   type LoadProgressUpdate,
-  type User,
   ApiError,
 } from '@/lib/api';
+import type { User } from '@/types';
 
 const { Title, Paragraph, Text } = Typography;
 const { useBreakpoint } = Grid;
