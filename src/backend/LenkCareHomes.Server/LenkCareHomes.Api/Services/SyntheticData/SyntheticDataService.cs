@@ -256,10 +256,11 @@ public sealed class SyntheticDataService : ISyntheticDataService
     public Task<ClearDataResult> ClearDataAsync(
         Guid userId,
         string? ipAddress,
+        IReadOnlyList<Guid>? userIdsToKeep = null,
         CancellationToken cancellationToken = default)
     {
         // Call the progress version with a no-op callback
-        return ClearDataWithProgressAsync(userId, ipAddress, _ => Task.CompletedTask, cancellationToken);
+        return ClearDataWithProgressAsync(userId, ipAddress, _ => Task.CompletedTask, userIdsToKeep, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -267,9 +268,18 @@ public sealed class SyntheticDataService : ISyntheticDataService
         Guid userId,
         string? ipAddress,
         Func<LoadProgressUpdate, Task> progressCallback,
+        IReadOnlyList<Guid>? userIdsToKeep = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(progressCallback);
+
+        // Ensure the current user is always kept
+        var preservedUserIds = new HashSet<Guid> { userId };
+        if (userIdsToKeep is not null)
+        {
+            foreach (var id in userIdsToKeep)
+                preservedUserIds.Add(id);
+        }
 
         if (!IsAvailable)
             return new ClearDataResult
@@ -368,7 +378,7 @@ public sealed class SyntheticDataService : ISyntheticDataService
             });
 
             sqlRecordsDeleted += await _context.CaregiverHomeAssignments
-                .Where(ca => ca.UserId != userId)
+                .Where(ca => !preservedUserIds.Contains(ca.UserId))
                 .ExecuteDeleteAsync(cancellationToken);
 
             // Beds and homes
@@ -376,19 +386,19 @@ public sealed class SyntheticDataService : ISyntheticDataService
             sqlRecordsDeleted += await _context.Homes.ExecuteDeleteAsync(cancellationToken);
 
             // ================================================================
-            // Step 5: Delete users
+            // Step 5: Delete users (except preserved users)
             // ================================================================
             await progressCallback(new LoadProgressUpdate
             {
                 Phase = "Users",
-                Message = "Deleting user accounts (except yours)...",
+                Message = $"Deleting user accounts (keeping {preservedUserIds.Count} selected users)...",
                 CurrentStep = 6,
                 TotalSteps = totalSteps,
                 ItemsProcessed = sqlRecordsDeleted
             });
 
             var usersToDelete = await _context.Users
-                .Where(u => u.Id != userId)
+                .Where(u => !preservedUserIds.Contains(u.Id))
                 .ToListAsync(cancellationToken);
 
             foreach (var user in usersToDelete)
@@ -397,7 +407,8 @@ public sealed class SyntheticDataService : ISyntheticDataService
                 sqlRecordsDeleted++;
             }
 
-            _logger.LogInformation("SQL data cleared: {Count} records deleted", sqlRecordsDeleted);
+            _logger.LogInformation("SQL data cleared: {Count} records deleted, {Kept} users preserved", 
+                sqlRecordsDeleted, preservedUserIds.Count);
 
             // ================================================================
             // Step 6: Clear Azure Blob Storage
@@ -786,7 +797,7 @@ public sealed class SyntheticDataService : ISyntheticDataService
                     : ParseDateOnly(clientData.DischargeDate),
                 DischargeReason = clientData.DischargeReason,
                 HomeId = homeId,
-                BedId = bedId,
+                BedId = clientData.IsActive ? bedId : null, // Discharged clients should not be assigned to beds
                 PrimaryPhysician = clientData.PrimaryPhysician,
                 PrimaryPhysicianPhone = clientData.PrimaryPhysicianPhone,
                 EmergencyContactName = clientData.EmergencyContactName,
@@ -801,14 +812,66 @@ public sealed class SyntheticDataService : ISyntheticDataService
             };
             _context.Clients.Add(client);
 
-            // Update bed status if occupied
+            // Update bed status if occupied (only if client is active and bed isn't already occupied)
             if (bedId.HasValue && clientData.IsActive)
             {
                 var bed = await _context.Beds.FindAsync([bedId.Value], cancellationToken);
-                if (bed is not null) bed.Status = BedStatus.Occupied;
+                if (bed is not null && bed.Status != BedStatus.Occupied) 
+                    bed.Status = BedStatus.Occupied;
             }
 
             clientsLoaded++;
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        // Validate and fix: ensure no home has more active clients than capacity
+        _logger.LogInformation("Validating client capacity constraints...");
+        var homesWithClients = await _context.Homes
+            .Include(h => h.Beds)
+            .Include(h => h.Clients)
+            .ToListAsync(cancellationToken);
+
+        foreach (var home in homesWithClients)
+        {
+            var activeClients = home.Clients.Where(c => c.IsActive).ToList();
+            var activeBeds = home.Beds.Where(b => b.IsActive).ToList();
+
+            if (activeClients.Count > home.Capacity)
+            {
+                _logger.LogWarning(
+                    "Home {HomeName} has {ActiveCount} active clients but capacity is {Capacity}. Discharging excess.",
+                    home.Name, activeClients.Count, home.Capacity);
+
+                var excess = activeClients.Count - home.Capacity;
+                foreach (var client in activeClients.Take(excess))
+                {
+                    client.IsActive = false;
+                    client.DischargeDate = DateTime.UtcNow;
+                    client.DischargeReason = "Capacity adjustment";
+                    client.BedId = null;
+                }
+            }
+
+            // Also validate bed count vs active clients
+            if (activeClients.Count > activeBeds.Count)
+            {
+                _logger.LogWarning(
+                    "Home {HomeName} has {ActiveCount} active clients but only {BedCount} beds. Discharging excess.",
+                    home.Name, activeClients.Count, activeBeds.Count);
+
+                var excess = activeClients.Count - activeBeds.Count;
+                foreach (var client in activeClients.Take(excess))
+                {
+                    if (client.IsActive) // May have been handled above
+                    {
+                        client.IsActive = false;
+                        client.DischargeDate = DateTime.UtcNow;
+                        client.DischargeReason = "Bed availability adjustment";
+                        client.BedId = null;
+                    }
+                }
+            }
         }
 
         await _context.SaveChangesAsync(cancellationToken);

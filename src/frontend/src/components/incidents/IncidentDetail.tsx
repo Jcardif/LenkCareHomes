@@ -560,7 +560,8 @@ export default function IncidentDetail({ incident, onUpdate }: IncidentDetailPro
         >
           <Form.Item
             name="closureNotes"
-            label="Closure Notes (Optional)"
+            label="Closure Notes"
+            rules={[{ required: true, message: 'Closure notes are required' }]}
           >
             <TextArea
               rows={4}

@@ -244,10 +244,11 @@ Log in with the **Admin account** to perform these tests.
 | The address autocomplete works (suggestions appear as you type) | $\square$ | $\square$ |
 | Selecting an address auto-fills city, state, and zip fields | $\square$ | $\square$ |
 | The form validates required fields (name, address, phone, capacity) | $\square$ | $\square$ |
+| Capacity accepts any positive number (no maximum limit) | $\square$ | $\square$ |
 | Phone number field accepts only valid phone formats | $\square$ | $\square$ |
 | Success message appears after creation | $\square$ | $\square$ |
 | New home appears in the list | $\square$ | $\square$ |
-| Beds are automatically created based on capacity (Bed A, Bed B, etc.) | $\square$ | $\square$ |
+| Home is created with 0 beds (beds must be added manually via "Add Bed" button) | $\square$ | $\square$ |
 
 ### View Home Details
 
@@ -289,14 +290,18 @@ Log in with the **Admin account** to perform these tests.
 **Steps:**
 
 1. On the home details page, look at the **Beds** section
-2. Observe which beds are occupied vs available
-3. Click on an occupied bed's client name
+2. Click **Add Bed** to add a new bed
+3. Observe which beds are occupied vs available
+4. Click on an occupied bed's client name
 
 **What to Check:**
 
 | Item | Pass | Fail |
 |:-----|:----:|:----:|
 | Beds list shows each bed with its label (e.g., Bed A, Bed B) and status | $\square$ | $\square$ |
+| **Add Bed** button is disabled when total active beds equals home capacity | $\square$ | $\square$ |
+| Tooltip shows capacity information when Add Bed is disabled | $\square$ | $\square$ |
+| Cannot add more beds than the home's capacity | $\square$ | $\square$ |
 | Occupied beds show the assigned client's name as a clickable link | $\square$ | $\square$ |
 | Clicking client name navigates to that client's profile | $\square$ | $\square$ |
 | Available beds are clearly marked as "Available" | $\square$ | $\square$ |
@@ -391,6 +396,8 @@ Log in with the **Admin account** to perform these tests.
 | Form validates required fields (name, DOB, home, bed, admission date) | $\square$ | $\square$ |
 | Bed dropdown only shows available beds for the selected home | $\square$ | $\square$ |
 | Changing home selection updates available beds | $\square$ | $\square$ |
+| Bed dropdown is empty when all beds are occupied (cannot admit) | $\square$ | $\square$ |
+| Cannot admit client when home is at capacity (backend validation) | $\square$ | $\square$ |
 | Multiple allergies can be entered (comma-separated) | $\square$ | $\square$ |
 | Multiple diagnoses can be entered | $\square$ | $\square$ |
 | Can add multiple emergency contacts (click Add button) | $\square$ | $\square$ |

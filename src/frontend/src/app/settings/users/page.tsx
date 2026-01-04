@@ -472,7 +472,7 @@ function UsersContent() {
               <Tooltip title="Delete">
                 <Popconfirm
                   title="Delete user"
-                  description="Are you sure you want to permanently delete this user? This action cannot be undone."
+                  description="This will remove the user's email and phone number while keeping their name for record-keeping. The user will no longer be able to log in."
                   onConfirm={() => handleDelete(record.id)}
                   okText="Yes"
                   cancelText="No"

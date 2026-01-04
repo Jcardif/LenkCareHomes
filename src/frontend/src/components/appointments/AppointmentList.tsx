@@ -145,11 +145,29 @@ export default function AppointmentList({
   const [rescheduleNotes, setRescheduleNotes] = useState('');
 
   // Filters
-  const [filterHomeId, setFilterHomeId] = useState<string | undefined>(homeId);
-  const [filterStatus, setFilterStatus] = useState<AppointmentStatus | undefined>();
-  const [filterType, setFilterType] = useState<AppointmentType | undefined>();
-  const [filterDateRange, setFilterDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
+  const [filterHomeId, setFilterHomeIdState] = useState<string | undefined>(homeId);
+  const [filterStatus, setFilterStatusState] = useState<AppointmentStatus | undefined>();
+  const [filterType, setFilterTypeState] = useState<AppointmentType | undefined>();
+  const [filterDateRange, setFilterDateRangeState] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
   const [sortDescending, setSortDescending] = useState(true); // Default to most recent first
+
+  // Wrapper functions that reset to page 1 when filters change
+  const setFilterHomeId = (value: string | undefined) => {
+    setFilterHomeIdState(value);
+    setCurrentPage(1);
+  };
+  const setFilterStatus = (value: AppointmentStatus | undefined) => {
+    setFilterStatusState(value);
+    setCurrentPage(1);
+  };
+  const setFilterType = (value: AppointmentType | undefined) => {
+    setFilterTypeState(value);
+    setCurrentPage(1);
+  };
+  const setFilterDateRange = (value: [dayjs.Dayjs, dayjs.Dayjs] | null) => {
+    setFilterDateRangeState(value);
+    setCurrentPage(1);
+  };
 
   const fetchAppointments = useCallback(async () => {
     try {
@@ -398,8 +416,6 @@ export default function AppointmentList({
       key: 'appointmentType',
       responsive: ['md'] as const,
       render: getTypeTag,
-      filters: APPOINTMENT_TYPES.map((t) => ({ text: t.label, value: t.value })),
-      onFilter: (value, record) => record.appointmentType === value,
     },
     {
       title: 'Duration',
@@ -415,8 +431,6 @@ export default function AppointmentList({
       key: 'status',
       width: isMobile ? 90 : 110,
       render: getStatusTag,
-      filters: APPOINTMENT_STATUSES.map((s) => ({ text: s.label, value: s.value })),
-      onFilter: (value, record) => record.status === value,
     },
     {
       title: 'Location',

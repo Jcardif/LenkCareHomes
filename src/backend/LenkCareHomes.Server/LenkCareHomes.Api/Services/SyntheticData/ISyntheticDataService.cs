@@ -48,10 +48,12 @@ public interface ISyntheticDataService
     /// </summary>
     /// <param name="userId">The ID of the user clearing the data.</param>
     /// <param name="ipAddress">The IP address of the request.</param>
+    /// <param name="userIdsToKeep">List of user IDs to preserve (not delete).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<ClearDataResult> ClearDataAsync(
         Guid userId,
         string? ipAddress,
+        IReadOnlyList<Guid>? userIdsToKeep = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -60,11 +62,13 @@ public interface ISyntheticDataService
     /// <param name="userId">The ID of the user clearing the data.</param>
     /// <param name="ipAddress">The IP address of the request.</param>
     /// <param name="progressCallback">Callback invoked for each progress update.</param>
+    /// <param name="userIdsToKeep">List of user IDs to preserve (not delete).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<ClearDataResult> ClearDataWithProgressAsync(
         Guid userId,
         string? ipAddress,
         Func<LoadProgressUpdate, Task> progressCallback,
+        IReadOnlyList<Guid>? userIdsToKeep = null,
         CancellationToken cancellationToken = default);
 }
 

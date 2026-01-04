@@ -1916,18 +1916,26 @@ export const syntheticDataApi = {
    * @param onProgress Callback invoked for each progress update.
    * @param onComplete Callback invoked when clearing completes successfully.
    * @param onError Callback invoked if an error occurs.
+   * @param userIdsToKeep Optional list of user IDs to preserve during clearing.
    * @returns A function to abort the operation.
    */
   clearDataWithProgress: (
     onProgress: (progress: LoadProgressUpdate) => void,
     onComplete: (result: ClearDataResult) => void,
-    onError: (error: string) => void
+    onError: (error: string) => void,
+    userIdsToKeep?: string[]
   ): (() => void) => {
     const controller = new AbortController();
 
     const startStream = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/syntheticdata/clear-stream`, {
+        // Build URL with optional userIdsToKeep parameter
+        let url = `${API_BASE_URL}/syntheticdata/clear-stream`;
+        if (userIdsToKeep && userIdsToKeep.length > 0) {
+          url += `?userIdsToKeep=${userIdsToKeep.join(',')}`;
+        }
+
+        const response = await fetch(url, {
           method: 'GET',
           credentials: 'include',
           signal: controller.signal,

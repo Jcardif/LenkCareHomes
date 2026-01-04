@@ -102,6 +102,17 @@ public sealed class ClientService : IClientService
         if (!home.IsActive)
             return new ClientOperationResponse { Success = false, Error = "Cannot admit clients to an inactive home." };
 
+        // Check if admitting a client would exceed the home's capacity
+        var activeClientCount = await _dbContext.Clients
+            .CountAsync(c => c.HomeId == request.HomeId && c.IsActive, cancellationToken);
+
+        if (activeClientCount >= home.Capacity)
+            return new ClientOperationResponse
+            {
+                Success = false,
+                Error = $"Cannot admit client. Home capacity is {home.Capacity} and there are already {activeClientCount} active clients."
+            };
+
         // Verify bed exists, is active, and is available
         var bed = await _dbContext.Beds
             .FirstOrDefaultAsync(b => b.Id == request.BedId, cancellationToken);
@@ -282,6 +293,10 @@ public sealed class ClientService : IClientService
 
         if (!client.IsActive)
             return new ClientOperationResponse { Success = false, Error = "Client is already discharged." };
+
+        // Validate discharge date is not before admission date
+        if (request.DischargeDate.Date < client.AdmissionDate.Date)
+            return new ClientOperationResponse { Success = false, Error = "Discharge date cannot be before admission date." };
 
         // Update client
         client.DischargeDate = request.DischargeDate;

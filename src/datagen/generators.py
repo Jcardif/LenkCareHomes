@@ -230,7 +230,7 @@ class ClientGenerator:
             "gender": gender,
             "admissionDate": admission_date.date().isoformat(),
             "homeId": home_id,
-            "bedId": bed_id,
+            "bedId": None if discharged else bed_id,  # Discharged clients should not be assigned to beds
             "primaryPhysician": physician["name"],
             "primaryPhysicianPhone": physician["phone"],
             "emergencyContactName": f"{ec_first} {ec_last}",

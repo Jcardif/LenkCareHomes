@@ -402,6 +402,10 @@ public sealed class IncidentService : IIncidentService
 
         if (incident is null) return IncidentOperationResponse.Fail("Incident not found.");
 
+        // Require closure notes when closing an incident
+        if (request.NewStatus == IncidentStatus.Closed && string.IsNullOrWhiteSpace(request.ClosureNotes))
+            return IncidentOperationResponse.Fail("Closure notes are required when closing an incident.");
+
         var oldStatus = incident.Status;
         incident.Status = request.NewStatus;
         incident.UpdatedAt = DateTime.UtcNow;

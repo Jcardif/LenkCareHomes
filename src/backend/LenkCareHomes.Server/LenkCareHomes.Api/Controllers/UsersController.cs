@@ -232,7 +232,8 @@ public sealed class UsersController : ControllerBase
     }
 
     /// <summary>
-    ///     Permanently deletes a user from the system.
+    ///     Anonymizes a user's PII while preserving the record for audit trail.
+    ///     The user's name is retained for traceability.
     /// </summary>
     /// <param name="id">User ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -247,8 +248,8 @@ public sealed class UsersController : ControllerBase
         var currentUserId = GetCurrentUserId();
         if (currentUserId is null) return Unauthorized();
 
-        // Prevent self-deletion
-        if (id == currentUserId.Value) return BadRequest(new { error = "You cannot delete your own account." });
+        // Prevent self-anonymization
+        if (id == currentUserId.Value) return BadRequest(new { error = "You cannot anonymize your own account." });
 
         var success = await _userService.DeleteUserAsync(
             id,
@@ -258,7 +259,7 @@ public sealed class UsersController : ControllerBase
 
         if (!success) return NotFound();
 
-        return Ok(new { message = "User deleted successfully." });
+        return Ok(new { message = "User PII anonymized successfully." });
     }
 
     /// <summary>
