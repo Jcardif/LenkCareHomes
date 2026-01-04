@@ -327,11 +327,30 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Apply migrations
-        if: steps.check-migrations.outputs.has_migrations == 'true'
+        if: steps.check-migrations.outputs.has_migrations == 'true' && needs.setup.outputs.environment != 'staging'
         uses: azure/sql-action@v2.3
         with:
           connection-string: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
           path: ./migrations/migration-script.sql
+
+      # Staging uses free-tier SQL which may need cold start wake-up - retry up to 3 times
+      - name: Apply migrations (with retries for staging)
+        if: steps.check-migrations.outputs.has_migrations == 'true' && needs.setup.outputs.environment == 'staging'
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: |
+            # Extract connection string components
+            CS="${{ secrets.AZURE_SQL_CONNECTION_STRING }}"
+            SERVER=$(echo "$CS" | grep -oP 'Server=tcp:\K[^,]+' || echo "$CS" | grep -oP 'Server=\K[^;,]+')
+            DATABASE=$(echo "$CS" | grep -oP 'Initial Catalog=\K[^;]+' || echo "$CS" | grep -oP 'Database=\K[^;]+')
+            USER=$(echo "$CS" | grep -oP 'User ID=\K[^;]+' || echo "$CS" | grep -oP 'User=\K[^;]+')
+            PASSWORD=$(echo "$CS" | grep -oP 'Password=\K[^;]+')
+            
+            echo "Connecting to $SERVER, database $DATABASE..."
+            sqlcmd -S "$SERVER,1433" -d "$DATABASE" -U "$USER" -P "$PASSWORD" -i ./migrations/migration-script.sql -C
 
       - name: Migration summary
         run: |

@@ -69,6 +69,10 @@ function HomeDetailContent({ params }: HomeDetailPageProps) {
   const [beds, setBeds] = useState<Bed[]>([]);
   const [loading, setLoading] = useState(true);
   const [bedsLoading, setBedsLoading] = useState(true);
+
+  // Calculate if at capacity (only count active beds)
+  const activeBedCount = beds.filter(b => b.isActive).length;
+  const isAtCapacity = home ? activeBedCount >= home.capacity : false;
   const [error, setError] = useState<string | null>(null);
   const [includeInactiveBeds, setIncludeInactiveBeds] = useState(false);
 
@@ -270,10 +274,13 @@ function HomeDetailContent({ params }: HomeDetailPageProps) {
       key: 'status',
       render: (_, record) => (
         <Space size={4} wrap>
-          <Tag color={record.status === 'Available' ? 'green' : 'blue'}>
-            {record.status}
-          </Tag>
-          {!record.isActive && <Tag>Inactive</Tag>}
+          {!record.isActive ? (
+            <Tag color="default">Inactive</Tag>
+          ) : (
+            <Tag color={record.status === 'Available' ? 'green' : 'blue'}>
+              {record.status}
+            </Tag>
+          )}
         </Space>
       ),
     },
@@ -490,14 +497,17 @@ function HomeDetailContent({ params }: HomeDetailPageProps) {
         size={isMobile ? 'small' : 'default'}
         extra={
           isMobile ? (
-            <Button 
-              type="primary" 
-              icon={<PlusOutlined />} 
-              onClick={handleCreateBed}
-              size="small"
-            >
-              Add
-            </Button>
+            <Tooltip title={isAtCapacity ? `Capacity reached (${activeBedCount}/${home?.capacity})` : undefined}>
+              <Button 
+                type="primary" 
+                icon={<PlusOutlined />} 
+                onClick={handleCreateBed}
+                size="small"
+                disabled={isAtCapacity}
+              >
+                Add
+              </Button>
+            </Tooltip>
           ) : (
             <Space>
               <Space>
@@ -508,9 +518,11 @@ function HomeDetailContent({ params }: HomeDetailPageProps) {
                 />
                 <Text type="secondary">Show inactive</Text>
               </Space>
-              <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateBed}>
-                Add Bed
-              </Button>
+              <Tooltip title={isAtCapacity ? `Capacity reached (${activeBedCount}/${home?.capacity})` : undefined}>
+                <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateBed} disabled={isAtCapacity}>
+                  Add Bed
+                </Button>
+              </Tooltip>
             </Space>
           )
         }
@@ -538,14 +550,17 @@ function HomeDetailContent({ params }: HomeDetailPageProps) {
               <Flex vertical align="center" style={{ padding: isMobile ? 24 : 32 }}>
                 <HomeOutlined style={{ fontSize: isMobile ? 36 : 48, color: '#d9d9d9', marginBottom: 16 }} />
                 <Text type="secondary">No beds in this home yet.</Text>
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  style={{ marginTop: 16, minHeight: 44 }}
-                  onClick={handleCreateBed}
-                >
-                  Add First Bed
-                </Button>
+                <Tooltip title={isAtCapacity ? `Capacity reached (${activeBedCount}/${home?.capacity})` : undefined}>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    style={{ marginTop: 16, minHeight: 44 }}
+                    onClick={handleCreateBed}
+                    disabled={isAtCapacity}
+                  >
+                    Add First Bed
+                  </Button>
+                </Tooltip>
               </Flex>
             ),
           }}

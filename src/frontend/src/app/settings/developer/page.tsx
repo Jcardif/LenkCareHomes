@@ -18,6 +18,7 @@ import {
   Progress,
   Steps,
   Grid,
+  Select,
 } from 'antd';
 import { 
   DatabaseOutlined, 
@@ -40,6 +41,7 @@ import { ProtectedRoute, AuthenticatedLayout } from '@/components';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   syntheticDataApi, 
+  usersApi,
   type SyntheticDataAvailability, 
   type DataStatistics,
   type LoadSyntheticDataResult,
@@ -47,6 +49,7 @@ import {
   type LoadProgressUpdate,
   ApiError,
 } from '@/lib/api';
+import type { User } from '@/types';
 
 const { Title, Paragraph, Text } = Typography;
 const { useBreakpoint } = Grid;
@@ -95,6 +98,12 @@ function DeveloperToolsContent() {
   const [currentProgress, setCurrentProgress] = useState<LoadProgressUpdate | null>(null);
   const [progressOperation, setProgressOperation] = useState<'load' | 'clear'>('load');
   const abortControllerRef = useRef<(() => void) | null>(null);
+
+  // User selection for clear operation
+  const [clearModalOpen, setClearModalOpen] = useState(false);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [usersToKeep, setUsersToKeep] = useState<string[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   // Check if user has Sysadmin role
   const isSysadmin = hasRole('Sysadmin');
@@ -230,92 +239,87 @@ function DeveloperToolsContent() {
     setCurrentProgress(null);
   };
 
-  const handleClearData = async () => {
-    Modal.confirm({
-      title: 'Clear All Data',
-      icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
-      content: (
-        <div>
-          <Alert
-            type="error"
-            message="Destructive Operation"
-            description="This will permanently delete ALL data from the database, blob storage, and audit logs except your user account. This action cannot be undone!"
-            style={{ marginBottom: 16 }}
-          />
-          <Paragraph>
-            The following will be deleted:
-          </Paragraph>
-          <ul>
-            <li>All homes and beds</li>
-            <li>All clients and their records</li>
-            <li>All care logs (ADLs, vitals, medications, etc.)</li>
-            <li>All activities and incidents</li>
-            <li>All documents (from Azure Blob Storage)</li>
-            <li>All audit logs (from Cosmos DB)</li>
-            <li>All caregivers (except you)</li>
-          </ul>
-        </div>
-      ),
-      okText: 'Clear All Data',
-      okButtonProps: { danger: true },
-      cancelText: 'Cancel',
-      onOk: () => {
-        setClearingData(true);
-        setClearResult(null);
-        setError(null);
-        setProgressModalOpen(true);
-        setProgressOperation('clear');
-        setCurrentProgress({
-          phase: 'Starting',
-          message: 'Preparing to clear data...',
-          currentStep: 0,
-          totalSteps: 8,
-          percentComplete: 0,
-          itemsProcessed: 0,
-          isComplete: false,
-          isError: false,
-        });
+  // Open the clear data modal and fetch users
+  const handleOpenClearModal = async () => {
+    setLoadingUsers(true);
+    setClearModalOpen(true);
+    try {
+      const users = await usersApi.getAll();
+      setAllUsers(users);
+      // Pre-select all users by default (keep all)
+      setUsersToKeep(users.map(u => u.id));
+    } catch {
+      setAllUsers([]);
+      setUsersToKeep([]);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
 
-        const abort = syntheticDataApi.clearDataWithProgress(
-          // On progress
-          (progress) => {
-            setCurrentProgress(progress);
-          },
-          // On complete
-          async (result) => {
-            setClearResult(result);
-            setClearingData(false);
-            // Keep modal open briefly to show completion
-            setTimeout(() => {
-              setProgressModalOpen(false);
-              setCurrentProgress(null);
-            }, 2000);
-
-            // Refresh statistics
-            try {
-              const stats = await syntheticDataApi.getStatistics();
-              setStatistics(stats);
-            } catch {
-              // Ignore stats refresh errors
-            }
-          },
-          // On error
-          (errorMessage) => {
-            setError(errorMessage);
-            setClearingData(false);
-            setCurrentProgress(prev => prev ? {
-              ...prev,
-              isError: true,
-              errorMessage,
-              phase: 'Error',
-              message: errorMessage,
-            } : null);
-          }
-        );
-
-        abortControllerRef.current = abort;
-      },
+  // Execute the clear operation with selected users to keep
+  const handleExecuteClear = () => {
+    setClearModalOpen(false);
+    setClearingData(true);
+    setClearResult(null);
+    setError(null);
+    setProgressModalOpen(true);
+    setProgressOperation('clear');
+    setCurrentProgress({
+      phase: 'Starting',
+      message: 'Preparing to clear data...',
+      currentStep: 0,
+      totalSteps: 8,
+      percentComplete: 0,
+      itemsProcessed: 0,
+      isComplete: false,
+      isError: false,
     });
+
+    const abort = syntheticDataApi.clearDataWithProgress(
+      // On progress
+      (progress) => {
+        setCurrentProgress(progress);
+      },
+      // On complete
+      async (result) => {
+        setClearResult(result);
+        setClearingData(false);
+        // Keep modal open briefly to show completion
+        setTimeout(() => {
+          setProgressModalOpen(false);
+          setCurrentProgress(null);
+        }, 2000);
+
+        // Refresh statistics
+        try {
+          const stats = await syntheticDataApi.getStatistics();
+          setStatistics(stats);
+        } catch {
+          // Ignore stats refresh errors
+        }
+      },
+      // On error
+      (errorMessage) => {
+        setError(errorMessage);
+        setClearingData(false);
+        setCurrentProgress(prev => prev ? {
+          ...prev,
+          isError: true,
+          errorMessage,
+          phase: 'Error',
+          message: errorMessage,
+        } : null);
+      },
+      // Pass the users to keep
+      usersToKeep
+    );
+
+    abortControllerRef.current = abort;
+  };
+
+  // Legacy handler - now opens the modal
+  const handleClearData = async () => {
+    await handleOpenClearModal();
   };
 
   // Redirect if not Sysadmin
@@ -736,6 +740,132 @@ function DeveloperToolsContent() {
             )}
           </div>
         )}
+      </Modal>
+
+      {/* Clear Data User Selection Modal */}
+      <Modal
+        title={
+          <Space>
+            <DeleteOutlined style={{ color: '#ff4d4f' }} />
+            <span>Clear All Data</span>
+          </Space>
+        }
+        open={clearModalOpen}
+        onCancel={() => setClearModalOpen(false)}
+        width={isMobile ? '100%' : 600}
+        style={isMobile ? { margin: 16, maxWidth: 'calc(100vw - 32px)' } : undefined}
+        footer={[
+          <Button key="cancel" onClick={() => setClearModalOpen(false)}>
+            Cancel
+          </Button>,
+          <Button 
+            key="clear" 
+            type="primary" 
+            danger 
+            onClick={handleExecuteClear}
+            disabled={loadingUsers}
+          >
+            Clear Data
+          </Button>,
+        ]}
+      >
+        <Alert
+          type="error"
+          message="Destructive Operation"
+          description="This will permanently delete ALL data from the database, blob storage, and audit logs. This action cannot be undone!"
+          style={{ marginBottom: 16 }}
+        />
+        
+        <Paragraph>
+          <Text strong>The following will be deleted:</Text>
+        </Paragraph>
+        <ul style={{ marginBottom: 16 }}>
+          <li>All homes and beds</li>
+          <li>All clients and their records</li>
+          <li>All care logs (ADLs, vitals, medications, etc.)</li>
+          <li>All activities and incidents</li>
+          <li>All documents (from Azure Blob Storage)</li>
+          <li>All audit logs (from Cosmos DB)</li>
+        </ul>
+
+        <Divider />
+
+        <Paragraph>
+          <Text strong>Select users to keep:</Text>
+          <br />
+          <Text type="secondary">
+            Search and select users to preserve. Selected users will be shown as chips.
+            Their passkeys and role assignments will be kept. All other users will be deleted.
+          </Text>
+        </Paragraph>
+
+        {loadingUsers ? (
+          <div style={{ textAlign: 'center', padding: 24 }}>
+            <Spin />
+            <br />
+            <Text type="secondary">Loading users...</Text>
+          </div>
+        ) : (
+          <Select
+            mode="multiple"
+            placeholder="Search users to keep..."
+            value={usersToKeep}
+            onChange={setUsersToKeep}
+            style={{ width: '100%' }}
+            showSearch
+            filterOption={(input, option) => {
+              const user = allUsers.find(u => u.id === option?.value);
+              if (!user) return false;
+              const searchText = `${user.firstName} ${user.lastName} ${user.email}`.toLowerCase();
+              return searchText.includes(input.toLowerCase());
+            }}
+            optionFilterProp="children"
+            tagRender={(props) => {
+              const { value, closable, onClose } = props;
+              const user = allUsers.find(u => u.id === value);
+              if (!user) return <Tag>{value}</Tag>;
+              const roleColor = user.roles.includes('Admin') ? 'red' : user.roles.includes('Sysadmin') ? 'purple' : 'blue';
+              return (
+                <Tag 
+                  color={roleColor} 
+                  closable={closable} 
+                  onClose={onClose}
+                  style={{ marginRight: 3 }}
+                >
+                  {user.firstName} {user.lastName}
+                </Tag>
+              );
+            }}
+            options={allUsers.map(user => ({
+              value: user.id,
+              label: (
+                <Space>
+                  <span>{user.firstName} {user.lastName}</span>
+                  <Text type="secondary" style={{ fontSize: 12 }}>({user.email})</Text>
+                  {user.roles.map(role => (
+                    <Tag key={role} color={role === 'Admin' ? 'red' : role === 'Sysadmin' ? 'purple' : 'blue'} style={{ fontSize: 10 }}>
+                      {role}
+                    </Tag>
+                  ))}
+                </Space>
+              ),
+            }))}
+          />
+        )}
+        
+        <div style={{ marginTop: 8 }}>
+          <Space>
+            <Button size="small" onClick={() => setUsersToKeep(allUsers.map(u => u.id))}>
+              Keep All
+            </Button>
+            <Button size="small" onClick={() => setUsersToKeep([])}>
+              Keep None
+            </Button>
+            <Text type="secondary">
+              {usersToKeep.length} of {allUsers.length} users will be kept
+            </Text>
+          </Space>
+        </div>
       </Modal>
     </div>
   );

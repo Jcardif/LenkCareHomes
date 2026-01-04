@@ -106,7 +106,8 @@ public interface IUserService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    ///     Permanently deletes a user from the system.
+    ///     Anonymizes a user's PII (email, phone) while preserving the record for audit trail.
+    ///     The user's name is retained for traceability.
     /// </summary>
     Task<bool> DeleteUserAsync(
         Guid userId,

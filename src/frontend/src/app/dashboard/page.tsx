@@ -90,45 +90,53 @@ function AdminDashboard() {
       {/* Key Metrics */}
       <Row gutter={[16, 16]} data-tour="dashboard-stats">
         <Col xs={24} sm={12} lg={6}>
-          <Card size={isMobile ? 'small' : 'default'}>
-            <Statistic
-              title="Active Homes"
-              value={stats?.activeHomes ?? 0}
-              suffix={<Text type="secondary">/ {stats?.totalHomes ?? 0}</Text>}
-              prefix={<HomeOutlined />}
-            />
-          </Card>
+          <Link href="/homes">
+            <Card size={isMobile ? 'small' : 'default'} hoverable>
+              <Statistic
+                title="Active Homes"
+                value={stats?.activeHomes ?? 0}
+                suffix={<Text type="secondary">/ {stats?.totalHomes ?? 0}</Text>}
+                prefix={<HomeOutlined />}
+              />
+            </Card>
+          </Link>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card size={isMobile ? 'small' : 'default'}>
-            <Statistic
-              title="Beds"
-              value={stats?.occupiedBeds ?? 0}
-              suffix={<Text type="secondary">/ {stats?.totalBeds ?? 0}</Text>}
-              prefix={<InboxOutlined />}
-            />
-            <Text type="secondary">{stats?.availableBeds ?? 0} available</Text>
-          </Card>
+          <Link href="/homes">
+            <Card size={isMobile ? 'small' : 'default'} hoverable>
+              <Statistic
+                title="Beds"
+                value={stats?.occupiedBeds ?? 0}
+                suffix={<Text type="secondary">/ {stats?.totalBeds ?? 0}</Text>}
+                prefix={<InboxOutlined />}
+              />
+              <Text type="secondary">{stats?.availableBeds ?? 0} available</Text>
+            </Card>
+          </Link>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card size={isMobile ? 'small' : 'default'}>
-            <Statistic
-              title="Active Clients"
-              value={stats?.activeClients ?? 0}
-              suffix={<Text type="secondary">/ {stats?.totalClients ?? 0}</Text>}
-              prefix={<UserOutlined />}
-            />
-          </Card>
+          <Link href="/clients">
+            <Card size={isMobile ? 'small' : 'default'} hoverable>
+              <Statistic
+                title="Active Clients"
+                value={stats?.activeClients ?? 0}
+                suffix={<Text type="secondary">/ {stats?.totalClients ?? 0}</Text>}
+                prefix={<UserOutlined />}
+              />
+            </Card>
+          </Link>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card size={isMobile ? 'small' : 'default'}>
-            <Statistic
-              title="Active Caregivers"
-              value={stats?.activeCaregivers ?? 0}
-              suffix={<Text type="secondary">/ {stats?.totalCaregivers ?? 0}</Text>}
-              prefix={<TeamOutlined />}
-            />
-          </Card>
+          <Link href="/caregivers">
+            <Card size={isMobile ? 'small' : 'default'} hoverable>
+              <Statistic
+                title="Active Caregivers"
+                value={stats?.activeCaregivers ?? 0}
+                suffix={<Text type="secondary">/ {stats?.totalCaregivers ?? 0}</Text>}
+                prefix={<TeamOutlined />}
+              />
+            </Card>
+          </Link>
         </Col>
       </Row>
 
@@ -333,22 +341,26 @@ function CaregiverDashboard() {
       {/* Key Metrics */}
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12}>
-          <Card size={isMobile ? 'small' : 'default'}>
-            <Statistic
-              title="Assigned Homes"
-              value={stats?.assignedHomesCount ?? 0}
-              prefix={<HomeOutlined />}
-            />
-          </Card>
+          <Link href="/homes">
+            <Card size={isMobile ? 'small' : 'default'} hoverable>
+              <Statistic
+                title="Assigned Homes"
+                value={stats?.assignedHomesCount ?? 0}
+                prefix={<HomeOutlined />}
+              />
+            </Card>
+          </Link>
         </Col>
         <Col xs={24} sm={12}>
-          <Card size={isMobile ? 'small' : 'default'}>
-            <Statistic
-              title="Active Clients"
-              value={stats?.activeClientsCount ?? 0}
-              prefix={<UserOutlined />}
-            />
-          </Card>
+          <Link href="/clients">
+            <Card size={isMobile ? 'small' : 'default'} hoverable>
+              <Statistic
+                title="Active Clients"
+                value={stats?.activeClientsCount ?? 0}
+                prefix={<UserOutlined />}
+              />
+            </Card>
+          </Link>
         </Col>
       </Row>
 

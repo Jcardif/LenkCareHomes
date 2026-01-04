@@ -521,7 +521,6 @@ function HomesContent() {
           >
             <InputNumber 
               min={1} 
-              max={20} 
               precision={0}
               keyboard={true}
               controls={true}

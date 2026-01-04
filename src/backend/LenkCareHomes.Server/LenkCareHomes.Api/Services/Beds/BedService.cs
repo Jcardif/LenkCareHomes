@@ -81,6 +81,17 @@ public sealed class BedService : IBedService
         if (!home.IsActive)
             return new BedOperationResponse { Success = false, Error = "Cannot add beds to an inactive home." };
 
+        // Check if adding a bed would exceed the home's capacity
+        var currentBedCount = await _dbContext.Beds
+            .CountAsync(b => b.HomeId == homeId && b.IsActive, cancellationToken);
+
+        if (currentBedCount >= home.Capacity)
+            return new BedOperationResponse 
+            { 
+                Success = false, 
+                Error = $"Cannot add more beds. Home capacity is {home.Capacity} and there are already {currentBedCount} active beds." 
+            };
+
         // Check for duplicate label within the home
         var existingBed = await _dbContext.Beds
             .AnyAsync(b => b.HomeId == homeId && b.Label == request.Label, cancellationToken);

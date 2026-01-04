@@ -941,7 +941,13 @@ function ClientDetailContent({ params }: ClientDetailPageProps) {
             label="Discharge Date"
             rules={[{ required: true, message: 'Required' }]}
           >
-            <DatePicker style={{ width: '100%' }} />
+            <DatePicker 
+              style={{ width: '100%' }} 
+              disabledDate={(current) => {
+                if (!client?.admissionDate) return false;
+                return current && current.isBefore(dayjs(client.admissionDate), 'day');
+              }}
+            />
           </Form.Item>
           <Form.Item
             name="dischargeReason"
@@ -993,7 +999,8 @@ function ClientDetailContent({ params }: ClientDetailPageProps) {
       >
         <Alert
           type="info"
-          message="Select a new bed for the client. The current bed will be marked as available."
+          message="Select a new bed for the client within the same home. The current bed will be marked as available."
+          description="Cross-home transfers are coming soon."
           style={{ marginBottom: 24 }}
         />
         <Form
@@ -1005,12 +1012,12 @@ function ClientDetailContent({ params }: ClientDetailPageProps) {
           <Form.Item
             name="homeId"
             label="Home"
-            rules={[{ required: true, message: 'Required' }]}
+            tooltip="Cross-home transfers coming soon"
           >
             <Select
               placeholder="Select home"
               value={selectedHomeId}
-              onChange={setSelectedHomeId}
+              disabled
               options={homes.map((h) => ({
                 label: h.name,
                 value: h.id,

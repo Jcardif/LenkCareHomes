@@ -499,21 +499,44 @@ public sealed class UserService : IUserService
         var user = await _userManager.FindByIdAsync(userId.ToString());
         if (user is null) return false;
 
-        // Prevent self-deletion
+        // Prevent self-anonymization
         if (userId == deletedById)
         {
-            _logger.LogWarning("User {UserId} attempted to delete themselves", userId);
+            _logger.LogWarning("User {UserId} attempted to anonymize themselves", userId);
             return false;
         }
 
-        var userEmail = user.Email;
-        var result = await _userManager.DeleteAsync(user);
+        var originalEmail = user.Email;
+
+        // Anonymize PII while preserving record for audit trail
+        // Keep FirstName and LastName for traceability
+        var anonymizedId = userId.ToString()[..8]; // Use first 8 chars of GUID for uniqueness
+        user.Email = $"anonymized_{anonymizedId}@deleted.local";
+        user.NormalizedEmail = user.Email.ToUpperInvariant();
+        user.UserName = user.Email;
+        user.NormalizedUserName = user.NormalizedEmail;
+        user.PhoneNumber = null;
+        user.PhoneNumberConfirmed = false;
+        user.IsActive = false;
+        user.InvitationToken = null;
+        user.InvitationExpiresAt = null;
+        user.BackupCodesHash = null;
+        user.RemainingBackupCodes = 0;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        // Remove passkeys for security
+        var passkeys = await _dbContext.UserPasskeys.Where(p => p.UserId == userId).ToListAsync(cancellationToken);
+        _dbContext.UserPasskeys.RemoveRange(passkeys);
+
+        var result = await _userManager.UpdateAsync(user);
         if (!result.Succeeded)
         {
-            _logger.LogError("Failed to delete user {UserId}: {Errors}",
+            _logger.LogError("Failed to anonymize user {UserId}: {Errors}",
                 userId, string.Join(", ", result.Errors.Select(e => e.Description)));
             return false;
         }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
         await _auditLog.LogAuthenticationEventAsync(
             AuditActions.UserDeleted,
@@ -522,7 +545,7 @@ public sealed class UserService : IUserService
             null,
             ipAddress,
             null,
-            $"Deleted user {userEmail}",
+            $"Anonymized user PII for {originalEmail} (name retained: {user.FirstName} {user.LastName})",
             cancellationToken);
 
         return true;

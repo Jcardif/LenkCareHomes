@@ -188,6 +188,7 @@ public sealed class SyntheticDataController : ControllerBase
         var result = await _syntheticDataService.ClearDataAsync(
             currentUserId.Value,
             GetClientIpAddress(),
+            null,
             cancellationToken);
 
         if (!result.Success) return BadRequest(result);
@@ -199,11 +200,14 @@ public sealed class SyntheticDataController : ControllerBase
     ///     Clears all data with real-time progress streaming via Server-Sent Events (SSE).
     ///     Only available in development environment.
     /// </summary>
+    /// <param name=\"userIdsToKeep\">Comma-separated list of user IDs to preserve.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>SSE stream of progress updates, ending with the final result.</returns>
     [HttpGet("clear-stream")]
     [Produces("text/event-stream")]
-    public async Task ClearDataStreamAsync(CancellationToken cancellationToken = default)
+    public async Task ClearDataStreamAsync(
+        [FromQuery] string? userIdsToKeep = null,
+        CancellationToken cancellationToken = default)
     {
         Response.Headers.Append("Cache-Control", "no-cache");
         Response.Headers.Append("Connection", "keep-alive");
@@ -224,7 +228,20 @@ public sealed class SyntheticDataController : ControllerBase
             return;
         }
 
-        _logger.LogWarning("User {UserId} initiated data clear with progress streaming", currentUserId);
+        // Parse user IDs to keep
+        List<Guid>? preserveIds = null;
+        if (!string.IsNullOrWhiteSpace(userIdsToKeep))
+        {
+            preserveIds = userIdsToKeep
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(s => Guid.TryParse(s, out var id) ? id : (Guid?)null)
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .ToList();
+        }
+
+        _logger.LogWarning("User {UserId} initiated data clear with progress streaming, keeping {KeepCount} users", 
+            currentUserId, preserveIds?.Count ?? 0);
 
         var result = await _syntheticDataService.ClearDataWithProgressAsync(
             currentUserId.Value,
@@ -234,6 +251,7 @@ public sealed class SyntheticDataController : ControllerBase
                 if (!cancellationToken.IsCancellationRequested)
                     await WriteSSEEventAsync("progress", progress, cancellationToken);
             },
+            preserveIds,
             cancellationToken);
 
         // Send final result

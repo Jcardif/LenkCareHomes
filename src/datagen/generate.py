@@ -295,6 +295,29 @@ def generate_synthetic_data():
             current_date += timedelta(days=random.randint(7, 21))
     
     all_data["clients"] = clients
+    
+    # Validate: ensure no home has more active clients than beds
+    for home in homes:
+        home_id = home["id"]
+        home_capacity = home["capacity"]
+        home_beds_count = len(beds_by_home[home_id])
+        active_clients = [c for c in clients_by_home[home_id] if c["isActive"]]
+        
+        if len(active_clients) > home_beds_count:
+            print(f"  WARNING: Home '{home['name']}' has {len(active_clients)} active clients but only {home_beds_count} beds!")
+            # Fix by discharging excess clients
+            excess = len(active_clients) - home_beds_count
+            for client in active_clients[:excess]:
+                client["isActive"] = False
+                client["dischargeDate"] = END_DATE.date().isoformat()
+                client["dischargeReason"] = "Transferred to another AFH"
+                # Clear bed assignment
+                client["bedId"] = None
+            print(f"    Fixed: Discharged {excess} client(s)")
+        
+        if len(active_clients) > home_capacity:
+            print(f"  WARNING: Home '{home['name']}' has {len(active_clients)} active clients but capacity is {home_capacity}!")
+    
     print(f"  Created {len(clients)} clients ({sum(1 for c in clients if c['isActive'])} currently active)")
     
     # =========================================================================

@@ -244,11 +244,12 @@ function CaregiversContent() {
       responsive: ['sm'],
       render: (_, record) => (
         <Space direction="vertical" size={4}>
-          <Tag color={record.isActive ? 'green' : 'default'}>
-            {record.isActive ? 'Active' : 'Inactive'}
-          </Tag>
-          {!record.invitationAccepted && (
+          {!record.invitationAccepted ? (
             <Tag color="orange">Pending</Tag>
+          ) : (
+            <Tag color={record.isActive ? 'green' : 'default'}>
+              {record.isActive ? 'Active' : 'Inactive'}
+            </Tag>
           )}
         </Space>
       ),
